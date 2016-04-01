@@ -1,23 +1,58 @@
 VERSION 5.00
 Begin VB.Form Form1 
    Caption         =   "Waimea"
-   ClientHeight    =   4740
+   ClientHeight    =   4815
    ClientLeft      =   60
-   ClientTop       =   345
+   ClientTop       =   630
    ClientWidth     =   8685
    Icon            =   "Form1.frx":0000
    LinkTopic       =   "Form1"
-   ScaleHeight     =   316
+   ScaleHeight     =   321
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   579
    StartUpPosition =   2  'CenterScreen
+   Begin VB.HScrollBar HScroll1 
+      Height          =   255
+      LargeChange     =   32
+      Left            =   120
+      Max             =   1024
+      SmallChange     =   8
+      TabIndex        =   1
+      Top             =   2280
+      Width           =   8415
+   End
    Begin VB.TextBox Text1 
-      Height          =   285
-      Left            =   240
+      BeginProperty Font 
+         Name            =   "Bitstream Vera Sans Mono"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      Height          =   2085
+      Left            =   120
+      MultiLine       =   -1  'True
+      ScrollBars      =   3  'Both
       TabIndex        =   0
-      Text            =   "zz=....zz"
-      Top             =   240
-      Width           =   3015
+      Text            =   "Form1.frx":000C
+      Top             =   2640
+      Width           =   8415
+   End
+   Begin VB.Menu menu_sheet 
+      Caption         =   "Sheet"
+      Begin VB.Menu menu_open 
+         Caption         =   "Open"
+         Shortcut        =   ^O
+      End
+      Begin VB.Menu open_save 
+         Caption         =   "Save"
+         Shortcut        =   ^S
+      End
+      Begin VB.Menu menu_export 
+         Caption         =   "Export"
+      End
    End
 End
 Attribute VB_Name = "Form1"
@@ -122,6 +157,25 @@ End Sub
 
 Private Sub HScroll1_Change()
     Text1_Change
+End Sub
+
+Private Sub menu_open_Click()
+    Dim ln As String
+    
+    If Text1.Text <> "" Then Exit Sub
+    
+    Open "waveform.txt" For Input As #1
+        While Not EOF(1)
+            Line Input #1, ln
+            Text1.Text = Text1.Text & ln & vbCrLf
+        Wend
+    Close #1
+End Sub
+
+Private Sub open_save_Click()
+    Open "waveform.txt" For Output As #1
+        Print #1, Text1.Text
+    Close #1
 End Sub
 
 Private Sub Text1_Change()

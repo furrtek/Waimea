@@ -300,13 +300,15 @@ Public Function DrawGLScene(frm As Form) As Boolean
     Dim st As Integer
     Dim l As Integer
     Dim steps As Integer
+    Dim waves() As String
+    Dim w As Integer
     Dim datacolor As Integer
     Dim datastate As Integer
     
     glClear clrColorBufferBit Or clrDepthBufferBit  ' Clear The Screen And The Depth Buffer
     glLoadIdentity                                  ' Reset The View
 
-    glTranslatef 0#, 0#, 0#
+    glTranslatef -Form1.HScroll1.Value, 0#, 0#
     
     glHint GL_LINE_SMOOTH_HINT, GL_NICEST
 
@@ -321,105 +323,114 @@ Public Function DrawGLScene(frm As Form) As Boolean
         Next c
     glEnd
     
-    lastx = 64
-    lasty = 64
+    waves = Split(wavedef, vbCrLf)
     
-    lastblk = "z"   ' Default block
-    datastate = -1
-
-    For c = 0 To Len(wavedef) - 1
-        pblk = Mid(wavedef, c + 1, 1)
-        blk = pblk
+    For w = 0 To UBound(waves)
         
-        If pblk = "." Then pblk = lastblk     ' Repeat
-        
-        If (Asc(pblk) >= &H30 And Asc(pblk) <= &H35) Or pblk = "=" Then   ' Start data
-            If datastate = -1 Then
-                If pblk = "=" Then
-                    datacolor = 6
-                Else
-                    datacolor = Asc(pblk) - &H30
+        lastblk = "z"   ' Default block
+        datastate = -1
+    
+        For c = 0 To Len(waves(w)) - 1
+            pblk = Mid(waves(w), c + 1, 1)
+            blk = pblk
+            
+            If pblk = "." Then pblk = lastblk     ' Repeat
+            
+            If (Asc(pblk) >= &H30 And Asc(pblk) <= &H35) Or pblk = "=" Then   ' Start data
+                If datastate = -1 Then
+                    If pblk = "=" Then
+                        datacolor = 6
+                    Else
+                        datacolor = Asc(pblk) - &H30
+                    End If
+                    If Mid(waves(w), c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
+                        blk = "u"
+                        datastate = -1
+                    Else
+                        datastate = 0
+                    End If
                 End If
-                datastate = 0
             End If
-        End If
-        
-        If datastate = 0 Then blk = "s"
-        If datastate = 1 Then blk = "d"
-        If datastate > -1 And Mid(wavedef, c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
-            blk = "e"
-            datastate = -1
-        End If
-        
-        ' Look for block def
-        d = 0
-        Do While 1
-            If Layout(d).DCount = 0 Then Exit Do
-            If Layout(d).Ch = blk Then Exit Do
-            d = d + 1
-        Loop
-        
-        ' Draw
-        xdraw = 64 + (c * 15)
-        ydraw = 64
-        
-        ' Transition
-        glBegin bmLines
-            glVertex2d lastx, lasty
-            glVertex2d Layout(d).SP.x + xdraw, Layout(d).SP.y + ydraw
-        glEnd
-        
-        For steps = 0 To Layout(d).DCount - 1
-        
-            glColor4b 0, 0, 0, 127
             
-            st = Layout(d).Drawstep(steps).t
+            If datastate = 0 Then blk = "s"
+            If datastate = 1 Then blk = "d"
+            If datastate > -1 And Mid(waves(w), c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
+                blk = "e"
+                datastate = -1
+            End If
             
-            If st = 2 Then
-                ' Line
+            ' Look for block def
+            d = 0
+            Do While 1
+                If Layout(d).DCount = 0 Then Exit Do
+                If Layout(d).Ch = blk Then Exit Do
+                d = d + 1
+            Loop
+            
+            ' Draw
+            xdraw = 64 + (c * 15)
+            ydraw = 32 + (w * 24)
+            
+            ' Transition
+            If c > 0 Then
                 glBegin bmLines
-                    dr_point Layout(d).Drawstep(steps).P, 0
-                    dr_point Layout(d).Drawstep(steps).P, 2
-                glEnd
-            ElseIf st = 3 Then
-                ' Line strip
-                glBegin bmLineStrip
-                With Layout(d).Drawstep(steps)
-                    dr_point Layout(d).Drawstep(steps).P, 0
-                    For l = 2 To Layout(d).Drawstep(steps).PCount Step 2
-                        dr_point Layout(d).Drawstep(steps).P, l
-                    Next l
-                End With
-                glEnd
-            ElseIf st = 4 Then
-                ' Polygon
-                If datacolor = 0 Then glColor4b 127, 0, 0, 32
-                If datacolor = 1 Then glColor4b 0, 127, 0, 32
-                If datacolor = 2 Then glColor4b 0, 0, 127, 32
-                If datacolor = 3 Then glColor4b 127, 127, 0, 32
-                If datacolor = 4 Then glColor4b 0, 127, 127, 32
-                If datacolor = 5 Then glColor4b 63, 0, 127, 32
-                If datacolor = 6 Then glColor4b 100, 100, 100, 32
-                glBegin bmPolygon
-                With Layout(d).Drawstep(steps)
-                    dr_point Layout(d).Drawstep(steps).P, 0
-                    For l = 2 To Layout(d).Drawstep(steps).PCount Step 2
-                        dr_point Layout(d).Drawstep(steps).P, l
-                    Next l
-                End With
+                    glVertex2d lastx, lasty
+                    glVertex2d Layout(d).SP.x + xdraw, Layout(d).SP.y + ydraw
                 glEnd
             End If
-        Next steps
-        
-        lastx = xdraw + Layout(d).EP.x
-        lasty = ydraw + Layout(d).EP.y
-        
-        If datastate = 0 Then datastate = 1
-        
-        lastblk = pblk
-
-    Next c
-
+            
+            For steps = 0 To Layout(d).DCount - 1
+            
+                glColor4b 0, 0, 0, 127
+                
+                st = Layout(d).Drawstep(steps).t
+                
+                If st = 2 Then
+                    ' Line
+                    glBegin bmLines
+                        dr_point Layout(d).Drawstep(steps).P, 0
+                        dr_point Layout(d).Drawstep(steps).P, 2
+                    glEnd
+                ElseIf st = 3 Then
+                    ' Line strip
+                    glBegin bmLineStrip
+                    With Layout(d).Drawstep(steps)
+                        dr_point Layout(d).Drawstep(steps).P, 0
+                        For l = 2 To Layout(d).Drawstep(steps).PCount Step 2
+                            dr_point Layout(d).Drawstep(steps).P, l
+                        Next l
+                    End With
+                    glEnd
+                ElseIf st = 4 Then
+                    ' Polygon
+                    If datacolor = 0 Then glColor4b 127, 0, 0, 32
+                    If datacolor = 1 Then glColor4b 0, 127, 0, 32
+                    If datacolor = 2 Then glColor4b 0, 0, 127, 32
+                    If datacolor = 3 Then glColor4b 127, 127, 0, 32
+                    If datacolor = 4 Then glColor4b 0, 127, 127, 32
+                    If datacolor = 5 Then glColor4b 63, 0, 127, 32
+                    If datacolor = 6 Then glColor4b 100, 100, 100, 32
+                    glBegin bmPolygon
+                    With Layout(d).Drawstep(steps)
+                        dr_point Layout(d).Drawstep(steps).P, 0
+                        For l = 2 To Layout(d).Drawstep(steps).PCount Step 2
+                            dr_point Layout(d).Drawstep(steps).P, l
+                        Next l
+                    End With
+                    glEnd
+                End If
+            Next steps
+            
+            lastx = xdraw + Layout(d).EP.x
+            lasty = ydraw + Layout(d).EP.y
+            
+            If datastate = 0 Then datastate = 1
+            
+            lastblk = pblk
+    
+        Next c
+    Next w
+    
     DrawGLScene = True                              ' Everything Went OK
 End Function
 
