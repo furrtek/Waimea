@@ -1,0 +1,69 @@
+DEF z		Hi-Z
+SP 0,7
+L 0,7:15,7
+EP 15,7
+
+DEF h		High
+SP 0,0
+L 0,0:15,0
+EP 15,0
+
+DEF l		Low
+SP 0,15
+L 0,15:15,15
+EP 15,15
+
+DEF n		Clock negative
+SP 0,0
+LS 0,0:7,0:7,15:15,15
+EP 15,15
+
+DEF p		Clock positive
+SP 0,15
+LS 0,15:7,15:7,0:15,0
+EP 15,0
+
+DEF N		Clock negative with arrow
+SP 0,0
+LS 0,0:7,0:7,15:15,15
+LS 4,6:7,9:10,6
+EP 15,15
+
+DEF P		Clock positive with arrow
+SP 0,15
+LS 0,15:7,15:7,0:15,0
+LS 4,8:7,5:10,8
+EP 15,0
+
+DEF L		Falling with arrow
+SP 0,0
+LS 0,0:15,0:15,15
+LS 12,6:15,9:18,6
+EP 15,15
+
+DEF H		Rising with arrow
+SP 0,15
+LS 0,15:15,15:15,0
+LS 12,9:15,6:18,9
+EP 15,0
+
+DEF s		Data start
+SP 0,7
+SH 0,7:3,0:15,0:15,15:3,15
+LS 0,7:3,0:15,0
+LS 0,7:3,15:15,15
+EP 15,7
+
+DEF d		Data
+SP 0,7
+SH 0,0:15,0:15,15:0,15
+L 0,0:15,0
+L 0,15:15,15
+EP 15,7
+
+DEF e		Data end
+SP 0,7
+SH 0,0:12,0:15,7:12,15:0,15
+LS 0,0:12,0:15,7
+LS 0,15:12,15:15,7
+EP 15,7
