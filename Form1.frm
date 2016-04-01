@@ -11,6 +11,14 @@ Begin VB.Form Form1
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   579
    StartUpPosition =   2  'CenterScreen
+   Begin VB.TextBox Text2 
+      Height          =   285
+      Left            =   5160
+      TabIndex        =   2
+      Text            =   "pouet"
+      Top             =   1800
+      Width           =   2895
+   End
    Begin VB.HScrollBar HScroll1 
       Height          =   255
       LargeChange     =   32
@@ -130,6 +138,8 @@ Private Sub Form_Load()
     If Not CreateGLWindow(Me, 640, 480, 16, False) Then
         Done = True                             ' Quit If Window Was Not Created
     End If
+    
+    LoadFont
 
     Do While Not Done
         If (Keys(vbKeyEscape)) Then
@@ -189,4 +199,8 @@ End Sub
 
 Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
     Keys(KeyCode) = False
+End Sub
+
+Private Sub Text2_Change()
+    Text1_Change
 End Sub

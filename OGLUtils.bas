@@ -6,6 +6,8 @@ Public ydraw As Integer
 Public lastx As Integer
 Public lasty As Integer
 
+Public Texture(1) As GLuint
+
 Private Type DCoord
     x As Integer
     y As Integer
@@ -114,23 +116,45 @@ Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
 End Sub
 
 Public Function InitGL() As Boolean
-' All Setup For OpenGL Goes Here
+    glEnable glcTexture2D               ' Enable Texture Mapping ( NEW )
     glShadeModel smSmooth               ' Enables Smooth Shading
 
     glLineWidth 1
     glClearColor 1#, 1#, 1#, 0.5
+
+    glShadeModel GL_SMOOTH
 
     glClearDepth 1#                     ' Depth Buffer Setup
     glHint GL_LINE_SMOOTH_HINT, GL_NICEST
     glEnable GL_LINE_SMOOTH
     
     glEnable GL_BLEND
-    glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
-
 
     InitGL = True                       ' Initialization Went OK
 End Function
 
+Public Sub LoadFont()
+
+    Dim FontData() As GLbyte
+    Dim bd As Byte
+    Dim h, w As Integer
+    
+    ReDim FontData(2, 511, 255)
+    
+    Open "font.tga" For Binary As #1
+        Seek #1, 19
+        Get #1, , FontData
+    Close #1
+
+    ' Font stuff
+    glGenTextures 1, Texture(0)
+    glBindTexture glTexture2D, Texture(0)
+    glTexImage2D glTexture2D, 0, 3, 512, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, FontData(0, 0, 0)
+    glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR     ' Linear Filtering
+    glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR     ' Linear Filtering
+    
+    Erase FontData
+End Sub
 
 Public Sub KillGLWindow()
 ' Properly Kill The Window
@@ -286,7 +310,7 @@ Public Function CreateGLWindow(frm As Form, Width As Integer, Height As Integer,
 End Function
 
 Sub dr_point(P() As Integer, ofs As Integer)
-    glVertex2d P(ofs) + xdraw, P(ofs + 1) + ydraw
+    glVertex2f P(ofs) + xdraw, P(ofs + 1) + ydraw
 End Sub
 
 Public Function DrawGLScene(frm As Form) As Boolean
@@ -304,12 +328,14 @@ Public Function DrawGLScene(frm As Form) As Boolean
     Dim w As Integer
     Dim datacolor As Integer
     Dim datastate As Integer
+    Dim dstart As Integer
     
     glClear clrColorBufferBit Or clrDepthBufferBit  ' Clear The Screen And The Depth Buffer
     glLoadIdentity                                  ' Reset The View
 
     glTranslatef -Form1.HScroll1.Value, 0#, 0#
     
+    glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
     glHint GL_LINE_SMOOTH_HINT, GL_NICEST
 
     wavedef = frm.Text1.Text
@@ -331,6 +357,10 @@ Public Function DrawGLScene(frm As Form) As Boolean
         datastate = -1
     
         For c = 0 To Len(waves(w)) - 1
+            ' Draw
+            xdraw = 64 + (c * 15)
+            ydraw = 32 + (w * 24)
+            
             pblk = Mid(waves(w), c + 1, 1)
             blk = pblk
             
@@ -345,17 +375,26 @@ Public Function DrawGLScene(frm As Form) As Boolean
                     End If
                     If Mid(waves(w), c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
                         blk = "u"
-                        datastate = -1
+                        dstart = xdraw
+                        datastate = -2
                     Else
                         datastate = 0
                     End If
                 End If
             End If
             
-            If datastate = 0 Then blk = "s"
+            If datastate = 0 Then
+                dstart = xdraw
+                blk = "s"
+            End If
             If datastate = 1 Then blk = "d"
             If datastate > -1 And Mid(waves(w), c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
                 blk = "e"
+                datastate = -2
+            End If
+            
+            If datastate = -2 Then
+                dr_text Form1.Text2.Text, (xdraw + dstart) / 2, ydraw - 1
                 datastate = -1
             End If
             
@@ -366,10 +405,6 @@ Public Function DrawGLScene(frm As Form) As Boolean
                 If Layout(d).Ch = blk Then Exit Do
                 d = d + 1
             Loop
-            
-            ' Draw
-            xdraw = 64 + (c * 15)
-            ydraw = 32 + (w * 24)
             
             ' Transition
             If c > 0 Then
@@ -433,6 +468,44 @@ Public Function DrawGLScene(frm As Form) As Boolean
     
     DrawGLScene = True                              ' Everything Went OK
 End Function
+
+Sub dr_text(txt As String, xdraw As Integer, ydraw As Integer)
+    Dim pch As Integer
+    Dim sx, sy, ex, ey As Single
+    Dim c As Integer
+    Dim xofs As Integer
+    
+    glBlendFunc sfDstColor, dfZero
+    glEnable GL_TEXTURE_2D
+    glColor3f 1#, 1#, 1#    ' 2 hours were lost here
+    glTexEnvf GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE
+    glBindTexture glTexture2D, Texture(0)
+    
+    xdraw = xdraw - (Len(txt) * 8 / 2) + 8
+    
+    For c = 0 To Len(txt) - 1
+        xofs = (c * 8) + xdraw
+        pch = Asc(Mid(txt, c + 1, 1)) - 32
+        sx = ((pch Mod 16) / 16)
+        sy = 1 - ((pch \ 16) / 8)
+        ex = sx + (1 / 16)
+        ey = sy - (1 / 8)
+        
+        glBegin bmQuads
+            glTexCoord2f sx, sy
+            glVertex2f xofs, ydraw
+            glTexCoord2f ex, sy
+            glVertex2f 16 + xofs, ydraw
+            glTexCoord2f ex, ey
+            glVertex2f 16 + xofs, 16 + ydraw
+            glTexCoord2f sx, ey
+            glVertex2f xofs, 16 + ydraw
+        glEnd
+    Next c
+    
+    glDisable GL_TEXTURE_2D
+    glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+End Sub
 
 Function MatchT(ByVal s As String) As Integer
     If s = "SP" Then MatchT = 0      ' Start point
