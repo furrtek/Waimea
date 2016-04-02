@@ -6,6 +6,14 @@ Public ydraw As Integer
 Public lastx As Integer
 Public lasty As Integer
 
+Public FilePath As String
+
+Public xmargin As Integer
+
+Public WaveName As String
+Public Saved As Boolean
+Public datatxt() As String
+
 Public Texture(1) As GLuint
 
 Private Type DCoord
@@ -101,9 +109,9 @@ End Sub
 
 Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
 ' Resize And Initialize The GL Window
-    If Height = 0 Then              ' Prevent A Divide By Zero By
-        Height = 1                  ' Making Height Equal One
-    End If
+    If Height = 0 Then Height = 1
+
+    If Width = 0 Then Width = 1
     glViewport 0, 0, Width, Height  ' Reset The Current Viewport
     glMatrixMode mmProjection       ' Select The Projection Matrix
     glLoadIdentity                  ' Reset The Projection Matrix
@@ -139,7 +147,7 @@ Public Sub LoadFont()
     Dim bd As Byte
     Dim h, w As Integer
     
-    ReDim FontData(2, 511, 255)
+    ReDim FontData(3, 511, 255)
     
     Open "font.tga" For Binary As #1
         Seek #1, 19
@@ -149,7 +157,7 @@ Public Sub LoadFont()
     ' Font stuff
     glGenTextures 1, Texture(0)
     glBindTexture glTexture2D, Texture(0)
-    glTexImage2D glTexture2D, 0, 3, 512, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, FontData(0, 0, 0)
+    glTexImage2D glTexture2D, 0, 4, 512, 256, 0, tiRGBA, GL_UNSIGNED_BYTE, FontData(0, 0, 0)
     glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR     ' Linear Filtering
     glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR     ' Linear Filtering
     
@@ -316,86 +324,173 @@ End Sub
 Public Function DrawGLScene(frm As Form) As Boolean
     Dim c As Integer
     Dim xpos As Integer
-    Dim blk As String * 1
-    Dim lastblk As String * 1
-    Dim pblk As String * 1
-    Dim wavedef As String
     Dim d As Integer
-    Dim st As Integer
-    Dim l As Integer
-    Dim steps As Integer
+    Dim wavedef As String
     Dim waves() As String
+    Dim fields() As String
     Dim w As Integer
-    Dim datacolor As Integer
-    Dim datastate As Integer
-    Dim dstart As Integer
     
-    glClear clrColorBufferBit Or clrDepthBufferBit  ' Clear The Screen And The Depth Buffer
-    glLoadIdentity                                  ' Reset The View
+    glClear clrColorBufferBit Or clrDepthBufferBit
+    glLoadIdentity
 
     glTranslatef -Form1.HScroll1.Value, 0#, 0#
     
-    glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+    glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     glHint GL_LINE_SMOOTH_HINT, GL_NICEST
 
     wavedef = frm.Text1.Text
 
-    glColor4b 0, 0, 0, 10
+    ' Draw ticks
+    glColor4b 0, 0, 0, 15
     glBegin bmLines
         For c = 0 To frm.ScaleWidth - 1 Step 15
-            xpos = c + 64
+            xpos = c + xmargin
             glVertex2d xpos, 0
-            glVertex2d xpos, 128
+            glVertex2d xpos, frm.ScaleHeight
         Next c
     glEnd
     
+    ' Split lines
     waves = Split(wavedef, vbCrLf)
     
     For w = 0 To UBound(waves)
-        
-        lastblk = "z"   ' Default block
-        datastate = -1
+        WaveName = ""
+        ReDim datatxt(1)
+        datatxt(0) = ""
+        fields = Split(waves(w), " ")
+        ProcessFields fields, "name", w
+        ProcessFields fields, "data", w
+        ProcessFields fields, "wave", w
+        ProcessFields fields, "ruler", w
+    Next w
     
-        For c = 0 To Len(waves(w)) - 1
+    DrawGLScene = True
+End Function
+
+Sub SetDataColor(DataColor As Integer, Alpha As Integer)
+    If DataColor = 0 Then
+        glColor4b 127, 0, 0, Alpha
+    ElseIf DataColor = 1 Then
+        glColor4b 0, 127, 0, Alpha
+    ElseIf DataColor = 2 Then
+        glColor4b 0, 0, 127, Alpha
+    ElseIf DataColor = 3 Then
+        glColor4b 127, 127, 0, Alpha
+    ElseIf DataColor = 4 Then
+        glColor4b 0, 127, 127, Alpha
+    ElseIf DataColor = 5 Then
+        glColor4b 63, 0, 127, Alpha
+    ElseIf DataColor = 6 Then
+        glColor4b 100, 100, 100, Alpha
+    Else
+        glColor4b 0, 0, 0, Alpha
+    End If
+End Sub
+
+Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
+    Dim c As Integer
+    Dim st As Integer
+    Dim blk As String * 1
+    Dim lastblk As String * 1
+    Dim pblk As String * 1
+    Dim steps As Integer
+    Dim wavedef As String
+    Dim DataColor As Integer
+    Dim DataState As Integer
+    Dim dstart As Integer
+    Dim eq, f, d As Integer
+    Dim FieldType As String
+    Dim FieldData As String
+    Dim Found As Boolean
+    Dim l As Integer
+    Dim dti As Integer
+    Dim df() As String
+    
+    Found = False
+    For f = 0 To UBound(fields)
+        eq = InStr(1, fields(f), ":")   ' Field has type:data pair ?
+        If eq > 0 Then
+            FieldType = LCase(Left(fields(f), eq - 1))
+            FieldData = Right(fields(f), Len(fields(f)) - eq)
+            If FieldType = TypeMatch Then
+                Found = True
+                Exit For
+            End If
+        End If
+    Next f
+        
+    If Found = False Then Exit Sub
+    
+    ydraw = 32 + (w * 24)
+    
+    If FieldType = "ruler" Then
+        df = Split(FieldData, ",")
+        If UBound(df) = 1 Then
+            SetDataColor Val(df(1)), 63
+            glBegin bmLines
+                glVertex2d df(0) * 15 + xmargin, 0
+                glVertex2d df(0) * 15 + xmargin, Form1.ScaleHeight
+            glEnd
+        End If
+    End If
+    
+    If FieldType = "name" Then
+        WaveName = FieldData
+        glColor4f 0, 0, 0, 1
+        dr_text WaveName, xmargin - (Len(WaveName) * 8) - 4, ydraw - 1
+    End If
+
+    If FieldType = "data" Then
+        df = Split(FieldData, ",")
+        If UBound(df) >= 0 Then
+            ReDim datatxt(UBound(df))
+            For f = 0 To UBound(df)
+                datatxt(f) = df(f)
+            Next f
+        End If
+    End If
+
+    If FieldType = "wave" Then
+        lastblk = "z"   ' Default block
+        DataState = -1
+        dti = 0
+        For c = 0 To Len(FieldData) - 1
             ' Draw
             xdraw = 64 + (c * 15)
-            ydraw = 32 + (w * 24)
             
-            pblk = Mid(waves(w), c + 1, 1)
+            pblk = Mid(FieldData, c + 1, 1)
             blk = pblk
             
-            If pblk = "." Then pblk = lastblk     ' Repeat
+            If pblk = "." Then
+                pblk = lastblk     ' Repeat
+                blk = pblk
+            End If
             
             If (Asc(pblk) >= &H30 And Asc(pblk) <= &H35) Or pblk = "=" Then   ' Start data
-                If datastate = -1 Then
+                If DataState = -1 Then
                     If pblk = "=" Then
-                        datacolor = 6
+                        DataColor = 6
                     Else
-                        datacolor = Asc(pblk) - &H30
+                        DataColor = Asc(pblk) - &H30
                     End If
-                    If Mid(waves(w), c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
+                    If Mid(FieldData, c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
                         blk = "u"
                         dstart = xdraw
-                        datastate = -2
+                        DataState = -2
                     Else
-                        datastate = 0
+                        DataState = 0
                     End If
                 End If
             End If
             
-            If datastate = 0 Then
+            If DataState = 0 Then
                 dstart = xdraw
                 blk = "s"
             End If
-            If datastate = 1 Then blk = "d"
-            If datastate > -1 And Mid(waves(w), c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
+            If DataState = 1 Then blk = "d"
+            If DataState > -1 And Mid(FieldData, c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
                 blk = "e"
-                datastate = -2
-            End If
-            
-            If datastate = -2 Then
-                dr_text Form1.Text2.Text, (xdraw + dstart) / 2, ydraw - 1
-                datastate = -1
+                DataState = -2
             End If
             
             ' Look for block def
@@ -415,7 +510,6 @@ Public Function DrawGLScene(frm As Form) As Boolean
             End If
             
             For steps = 0 To Layout(d).DCount - 1
-            
                 glColor4b 0, 0, 0, 127
                 
                 st = Layout(d).Drawstep(steps).t
@@ -438,13 +532,7 @@ Public Function DrawGLScene(frm As Form) As Boolean
                     glEnd
                 ElseIf st = 4 Then
                     ' Polygon
-                    If datacolor = 0 Then glColor4b 127, 0, 0, 32
-                    If datacolor = 1 Then glColor4b 0, 127, 0, 32
-                    If datacolor = 2 Then glColor4b 0, 0, 127, 32
-                    If datacolor = 3 Then glColor4b 127, 127, 0, 32
-                    If datacolor = 4 Then glColor4b 0, 127, 127, 32
-                    If datacolor = 5 Then glColor4b 63, 0, 127, 32
-                    If datacolor = 6 Then glColor4b 100, 100, 100, 32
+                    SetDataColor DataColor, 31
                     glBegin bmPolygon
                     With Layout(d).Drawstep(steps)
                         dr_point Layout(d).Drawstep(steps).P, 0
@@ -456,18 +544,26 @@ Public Function DrawGLScene(frm As Form) As Boolean
                 End If
             Next steps
             
+            If DataState = 0 Then DataState = 1
+            If DataState = -2 Then
+                If (datatxt(0) <> "") Then
+                    If dti <= UBound(datatxt) Then
+                        SetDataColor DataColor, 127
+                        dr_text datatxt(dti), ((xdraw + dstart) / 2) - (Len(datatxt(dti)) * 8 / 2) + 8, ydraw - 1
+                        dti = dti + 1
+                    End If
+                End If
+                DataState = -1
+            End If
+            
             lastx = xdraw + Layout(d).EP.x
             lasty = ydraw + Layout(d).EP.y
-            
-            If datastate = 0 Then datastate = 1
             
             lastblk = pblk
     
         Next c
-    Next w
-    
-    DrawGLScene = True                              ' Everything Went OK
-End Function
+    End If
+End Sub
 
 Sub dr_text(txt As String, xdraw As Integer, ydraw As Integer)
     Dim pch As Integer
@@ -475,13 +571,10 @@ Sub dr_text(txt As String, xdraw As Integer, ydraw As Integer)
     Dim c As Integer
     Dim xofs As Integer
     
-    glBlendFunc sfDstColor, dfZero
+    glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     glEnable GL_TEXTURE_2D
-    glColor3f 1#, 1#, 1#    ' 2 hours were lost here
-    glTexEnvf GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE
+    'glTexEnvf GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE
     glBindTexture glTexture2D, Texture(0)
-    
-    xdraw = xdraw - (Len(txt) * 8 / 2) + 8
     
     For c = 0 To Len(txt) - 1
         xofs = (c * 8) + xdraw
