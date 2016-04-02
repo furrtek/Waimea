@@ -84,11 +84,8 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
-Dim Done As Boolean
-
 Private Sub Form_Load()
     Dim frm As Form
-    Done = False
     
     Dim lidx As Integer
     Dim didx As Integer
@@ -156,7 +153,7 @@ Private Sub Form_Load()
     
     Layout(lidx + 1).DCount = 0
     
-    If Not CreateGLWindow(Me, 640, 480, 16, False) Then Done = True
+    If Not CreateGLWindow(Me, 640, 480, 16, False) Then End
     
     LoadFont
     
@@ -171,17 +168,6 @@ Private Sub Form_Load()
         DoEvents
         SetSaveState True
     Close #1
-
-    Do While Not Done
-        If (Keys(vbKeyEscape)) Then
-            Unload Me
-            Done = True
-        Else
-            DoEvents
-        End If
-    Loop
-
-    End
 End Sub
 
 Private Sub Form_Paint()
@@ -200,13 +186,15 @@ Function GetFileName(fn As String)
 End Function
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
+    Dim Done As Boolean
+    
     If Saved = False Then
         Done = Confirm
     Else
         Done = True
     End If
     
-    Cancel = 1
+    If Done = False Then Cancel = 1
 End Sub
 
 Private Sub Form_Resize()
