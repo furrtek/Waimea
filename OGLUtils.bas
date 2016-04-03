@@ -1,10 +1,35 @@
 Attribute VB_Name = "OGLUtils"
 Option Explicit
 
+Public Texture(1) As GLuint
+
 Public xdraw As Integer
 Public ydraw As Integer
-Public lastx As Integer
-Public lasty As Integer
+
+Public RenderTex As GLuint
+
+Public nWaves As Integer
+
+Public Nav_X As Integer
+Public Nav_Y As Integer
+
+Public TicksDL As GLuint
+Public WaveDL(256) As GLuint
+Public CharDL(128) As GLuint
+
+Private Type DCoord
+    X As Integer
+    Y As Integer
+End Type
+
+Private Type WDispList
+    DL As GLuint
+    Char As String * 1
+    SP As DCoord
+    EP As DCoord
+End Type
+
+Public DispLists(256) As WDispList  ' For blocks
 
 Public FilePath As String
 
@@ -14,121 +39,45 @@ Public WaveName As String
 Public Saved As Boolean
 Public datatxt() As String
 
-Public Texture(1) As GLuint
-
-Private Type DCoord
-    x As Integer
-    y As Integer
-End Type
-
-Private Type DStep
-    t As Integer
-    P(32) As Integer
-    PCount As Integer
-End Type
-
-Private Type Lay
-    Ch As String * 1
-    Drawstep(32) As DStep
-    DCount As Integer
-    SP As DCoord
-    EP As DCoord
-End Type
-
-Public Layout(256) As Lay
-
-' a couple of declares to work around some deficiencies of the type library
-Private Declare Function EnumDisplaySettings Lib "user32" Alias "EnumDisplaySettingsA" (ByVal lpszDeviceName As Long, ByVal iModeNum As Long, lpDevMode As Any) As Boolean
-Private Declare Function ChangeDisplaySettings Lib "user32" Alias "ChangeDisplaySettingsA" (lpDevMode As Any, ByVal dwflags As Long) As Long
-Private Declare Function CreateIC Lib "gdi32" Alias "CreateICA" (ByVal lpDriverName As String, ByVal lpDeviceName As String, ByVal lpOutput As String, ByVal lpInitData As Long) As Long
-
-Private Const CCDEVICENAME = 32
-Private Const CCFORMNAME = 32
-Private Const DM_BITSPERPEL = &H40000
-Private Const DM_PELSWIDTH = &H80000
-Private Const DM_PELSHEIGHT = &H100000
-
-Private Type DEVMODE
-    dmDeviceName        As String * CCDEVICENAME
-    dmSpecVersion       As Integer
-    dmDriverVersion     As Integer
-    dmSize              As Integer
-    dmDriverExtra       As Integer
-    dmFields            As Long
-    dmOrientation       As Integer
-    dmPaperSize         As Integer
-    dmPaperLength       As Integer
-    dmPaperWidth        As Integer
-    dmScale             As Integer
-    dmCopies            As Integer
-    dmDefaultSource     As Integer
-    dmPrintQuality      As Integer
-    dmColor             As Integer
-    dmDuplex            As Integer
-    dmYResolution       As Integer
-    dmTTOption          As Integer
-    dmCollate           As Integer
-    dmFormName          As String * CCFORMNAME
-    dmUnusedPadding     As Integer
-    dmBitsPerPel        As Integer
-    dmPelsWidth         As Long
-    dmPelsHeight        As Long
-    dmDisplayFlags      As Long
-    dmDisplayFrequency  As Long
-End Type
 
 Public Keys(255) As Boolean             ' used to keep track of key_downs
 
 Private hrc As Long
-Private fullscreen As Boolean
-
-Private OldWidth As Long
-Private OldHeight As Long
-Private OldBits As Long
-Private OldVertRefresh As Long
-
-Private mPointerCount As Integer
-
-Private Sub HidePointer()
-    ' hide the cursor (mouse pointer)
-    mPointerCount = ShowCursor(False) + 1
-    Do While ShowCursor(False) >= -1
-    Loop
-    Do While ShowCursor(True) <= -1
-    Loop
-    ShowCursor False
-End Sub
-
-Private Sub ShowPointer()
-    ' show the cursor (mouse pointer)
-    Do While ShowCursor(False) >= mPointerCount
-    Loop
-    Do While ShowCursor(True) <= mPointerCount
-    Loop
-End Sub
 
 Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
-' Resize And Initialize The GL Window
+    Dim c As Integer
+    Dim xpos As Integer
+    
     If Height = 0 Then Height = 1
-
     If Width = 0 Then Width = 1
-    glViewport 0, 0, Width, Height  ' Reset The Current Viewport
+    
+    glViewport 0, 150, Width, Height - 150 ' Reset The Current Viewport
     glMatrixMode mmProjection       ' Select The Projection Matrix
     glLoadIdentity                  ' Reset The Projection Matrix
 
-    ' Calculate The Aspect Ratio Of The Window
-    glOrtho 0#, Width, Height, 0#, -1, 1
+    glOrtho 0#, Width, Height - 150, 0#, -1, 1
 
     glMatrixMode mmModelView        ' Select The Modelview Matrix
     glLoadIdentity                  ' Reset The Modelview Matrix
+    
+    If glIsList(TicksDL) = 1 Then glDeleteLists TicksDL, 1
+    TicksDL = glGenLists(1)
+    glNewList TicksDL, GL_COMPILE
+        glBegin bmLines
+            For c = 0 To Form1.ScaleWidth - 1 Step 15
+                xpos = c + xmargin
+                glVertex2d xpos, 0
+                glVertex2d xpos, Form1.ScaleHeight
+            Next c
+        glEnd
+    glEndList
 End Sub
 
 Public Function InitGL() As Boolean
     glEnable glcTexture2D               ' Enable Texture Mapping ( NEW )
-    glShadeModel smSmooth               ' Enables Smooth Shading
+    glShadeModel smFlat
 
     glLineWidth 1
-    glClearColor 1#, 1#, 1#, 0.5
 
     glShadeModel GL_SMOOTH
 
@@ -165,12 +114,6 @@ Public Sub LoadFont()
 End Sub
 
 Public Sub KillGLWindow()
-' Properly Kill The Window
-    If fullscreen Then                              ' Are We In Fullscreen Mode?
-        ResetDisplayMode                            ' If So Switch Back To The Desktop
-        ShowPointer                                 ' Show Mouse Pointer
-    End If
-
     If hrc Then                                     ' Do We Have A Rendering Context?
         If wglMakeCurrent(0, 0) = 0 Then             ' Are We Able To Release The DC And RC Contexts?
             MsgBox "Release Of DC And RC Failed.", vbInformation, "SHUTDOWN ERROR"
@@ -188,86 +131,9 @@ Public Sub KillGLWindow()
 
 End Sub
 
-Private Sub SaveCurrentScreen()
-    ' Save the current screen resolution, bits, and Vertical refresh
-    Dim ret As Long
-    ret = CreateIC("DISPLAY", "", "", 0&)
-    OldWidth = GetDeviceCaps(ret, HORZRES)
-    OldHeight = GetDeviceCaps(ret, VERTRES)
-    OldBits = GetDeviceCaps(ret, BITSPIXEL)
-    OldVertRefresh = GetDeviceCaps(ret, VREFRESH)
-    ret = DeleteDC(ret)
-End Sub
-
-Private Function FindDEVMODE(ByVal Width As Integer, ByVal Height As Integer, ByVal Bits As Integer, Optional ByVal VertRefresh As Long = -1) As DEVMODE
-    ' locate a DEVMOVE that matches the passed parameters
-    Dim ret As Boolean
-    Dim i As Long
-    Dim dm As DEVMODE
-    i = 0
-    Do  ' enumerate the display settings until we find the one we want
-        ret = EnumDisplaySettings(0&, i, dm)
-        If dm.dmPelsWidth = Width And _
-            dm.dmPelsHeight = Height And _
-            dm.dmBitsPerPel = Bits And _
-            ((dm.dmDisplayFrequency = VertRefresh) Or (VertRefresh = -1)) Then Exit Do ' exit when we have a match
-        i = i + 1
-    Loop Until (ret = False)
-    FindDEVMODE = dm
-End Function
-
-Private Sub ResetDisplayMode()
-    Dim dm As DEVMODE             ' Device Mode
-    
-    dm = FindDEVMODE(OldWidth, OldHeight, OldBits, OldVertRefresh)
-    dm.dmFields = DM_BITSPERPEL Or DM_PELSWIDTH Or DM_PELSHEIGHT
-    If OldVertRefresh <> -1 Then
-        dm.dmFields = dm.dmFields Or DM_DISPLAYFREQUENCY
-    End If
-    ' Try To Set Selected Mode And Get Results.  NOTE: CDS_FULLSCREEN Gets Rid Of Start Bar.
-    If (ChangeDisplaySettings(dm, CDS_FULLSCREEN) <> DISP_CHANGE_SUCCESSFUL) Then
-    
-        ' If The Mode Fails, Offer Two Options.  Quit Or Run In A Window.
-        MsgBox "The Requested Mode Is Not Supported By Your Video Card", , "NeHe GL"
-    End If
-
-End Sub
-
-Private Sub SetDisplayMode(ByVal Width As Integer, ByVal Height As Integer, ByVal Bits As Integer, ByRef fullscreen As Boolean, Optional VertRefresh As Long = -1)
-    Dim dmScreenSettings As DEVMODE             ' Device Mode
-    Dim P As Long
-    SaveCurrentScreen                           ' save the current screen attributes so we can go back later
-    
-    dmScreenSettings = FindDEVMODE(Width, Height, Bits, VertRefresh)
-    dmScreenSettings.dmBitsPerPel = Bits
-    dmScreenSettings.dmPelsWidth = Width
-    dmScreenSettings.dmPelsHeight = Height
-    dmScreenSettings.dmFields = DM_BITSPERPEL Or DM_PELSWIDTH Or DM_PELSHEIGHT
-    If VertRefresh <> -1 Then
-        dmScreenSettings.dmDisplayFrequency = VertRefresh
-        dmScreenSettings.dmFields = dmScreenSettings.dmFields Or DM_DISPLAYFREQUENCY
-    End If
-    ' Try To Set Selected Mode And Get Results.  NOTE: CDS_FULLSCREEN Gets Rid Of Start Bar.
-    If (ChangeDisplaySettings(dmScreenSettings, CDS_FULLSCREEN) <> DISP_CHANGE_SUCCESSFUL) Then
-    
-        ' If The Mode Fails, Offer Two Options.  Quit Or Run In A Window.
-        If (MsgBox("The Requested Mode Is Not Supported By" & vbCr & "Your Video Card. Use Windowed Mode Instead?", vbYesNo + vbExclamation, "NeHe GL") = vbYes) Then
-            fullscreen = False                  ' Select Windowed Mode (Fullscreen=FALSE)
-        Else
-            ' Pop Up A Message Box Letting User Know The Program Is Closing.
-            MsgBox "Program Will Now Close.", vbCritical, "ERROR"
-            End                   ' Exit And Return FALSE
-        End If
-    End If
-End Sub
-
-Public Function CreateGLWindow(frm As Form, Width As Integer, Height As Integer, Bits As Integer, fullscreenflag As Boolean) As Boolean
+Public Function CreateGLWindow(frm As Form, Width As Integer, Height As Integer, Bits As Integer) As Boolean
     Dim PixelFormat As GLuint                       ' Holds The Results After Searching For A Match
     Dim pfd As PIXELFORMATDESCRIPTOR                ' pfd Tells Windows How We Want Things To Be
-
-
-    fullscreen = fullscreenflag                     ' Set The Global Fullscreen Flag
-
 
     pfd.cColorBits = Bits
     pfd.cDepthBits = 16
@@ -277,27 +143,27 @@ Public Function CreateGLWindow(frm As Form, Width As Integer, Height As Integer,
     pfd.nSize = Len(pfd)
     pfd.nVersion = 1
     
-    PixelFormat = ChoosePixelFormat(frm.hDC, pfd)
+    PixelFormat = ChoosePixelFormat(GetDC(frm.hWnd), pfd)
     If PixelFormat = 0 Then                     ' Did Windows Find A Matching Pixel Format?
         KillGLWindow                            ' Reset The Display
         MsgBox "Can't Find A Suitable PixelFormat.", vbExclamation, "ERROR"
         CreateGLWindow = False                  ' Return FALSE
     End If
 
-    If SetPixelFormat(frm.hDC, PixelFormat, pfd) = 0 Then ' Are We Able To Set The Pixel Format?
+    If SetPixelFormat(GetDC(frm.hWnd), PixelFormat, pfd) = 0 Then ' Are We Able To Set The Pixel Format?
         KillGLWindow                            ' Reset The Display
         MsgBox "Can't Set The PixelFormat.", vbExclamation, "ERROR"
         CreateGLWindow = False                           ' Return FALSE
     End If
     
-    hrc = wglCreateContext(frm.hDC)
+    hrc = wglCreateContext(GetDC(frm.hWnd))
     If (hrc = 0) Then                           ' Are We Able To Get A Rendering Context?
         KillGLWindow                            ' Reset The Display
         MsgBox "Can't Create A GL Rendering Context.", vbExclamation, "ERROR"
         CreateGLWindow = False                  ' Return FALSE
     End If
 
-    If wglMakeCurrent(frm.hDC, hrc) = 0 Then    ' Try To Activate The Rendering Context
+    If wglMakeCurrent(GetDC(frm.hWnd), hrc) = 0 Then    ' Try To Activate The Rendering Context
         KillGLWindow                            ' Reset The Display
         MsgBox "Can't Activate The GL Rendering Context.", vbExclamation, "ERROR"
         CreateGLWindow = False                  ' Return FALSE
@@ -314,14 +180,34 @@ Public Function CreateGLWindow(frm As Form, Width As Integer, Height As Integer,
     End If
 
     CreateGLWindow = True                       ' Success
-
 End Function
 
-Sub dr_point(P() As Integer, ofs As Integer)
-    glVertex2f P(ofs) + xdraw, P(ofs + 1) + ydraw
+Public Sub Display()
+    Dim w As Integer
+    
+    glMatrixMode mmModelView        ' Select The Modelview Matrix
+    glLoadIdentity                  ' Reset The Modelview Matrix
+    
+    glClearColor 1, 1, 1, 1
+    glClear clrColorBufferBit Or clrDepthBufferBit
+    
+    glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
+    glHint GL_LINE_SMOOTH_HINT, GL_NICEST
+    
+    glTranslatef Nav_X, Nav_Y, 0#
+    
+    ' Draw ticks
+    glColor4b 1, 0, 0, 15
+    glCallList TicksDL
+    
+    For w = 0 To nWaves
+        If glIsList(WaveDL(w)) = 1 Then glCallList WaveDL(w)
+    Next w
+    
+    SwapBuffers Form1.hDC
 End Sub
 
-Public Function DrawGLScene(frm As Form) As Boolean
+Public Sub Render(frm As Form)
     Dim c As Integer
     Dim xpos As Integer
     Dim d As Integer
@@ -329,61 +215,51 @@ Public Function DrawGLScene(frm As Form) As Boolean
     Dim waves() As String
     Dim fields() As String
     Dim w As Integer
-    
-    glClear clrColorBufferBit Or clrDepthBufferBit
-    glLoadIdentity
 
-    glTranslatef -Form1.HScroll1.Value, 0#, 0#
-    
-    glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
-    glHint GL_LINE_SMOOTH_HINT, GL_NICEST
-
-    wavedef = frm.Text1.Text
-
-    ' Draw ticks
-    glColor4b 0, 0, 0, 15
-    glBegin bmLines
-        For c = 0 To frm.ScaleWidth - 1 Step 15
-            xpos = c + xmargin
-            glVertex2d xpos, 0
-            glVertex2d xpos, frm.ScaleHeight
-        Next c
-    glEnd
+    wavedef = Form1.Text1.Text
     
     ' Split lines
     waves = Split(wavedef, vbCrLf)
+
+    nWaves = UBound(waves)
     
-    For w = 0 To UBound(waves)
+    For w = 0 To nWaves
         WaveName = ""
         ReDim datatxt(1)
         datatxt(0) = ""
-        fields = Split(waves(w), " ")
-        ProcessFields fields, "name", w
-        ProcessFields fields, "data", w
-        ProcessFields fields, "wave", w
-        ProcessFields fields, "ruler", w
+        fields = Split(waves(w), ";")
+        If glIsList(WaveDL(w)) = 1 Then glDeleteLists WaveDL(w), 1
+        WaveDL(w) = glGenLists(1)
+        glNewList WaveDL(w), GL_COMPILE
+            ProcessFields fields, "name", w
+            ProcessFields fields, "data", w
+            ProcessFields fields, "wave", w
+            ProcessFields fields, "ruler", w
+            glTranslatef 0#, 20#, 0#
+        glEndList
     Next w
     
-    DrawGLScene = True
-End Function
+    'Display
+End Sub
 
-Sub SetDataColor(DataColor As Integer, Alpha As Integer)
+Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     If DataColor = 0 Then
-        glColor4b 127, 0, 0, Alpha
+        glColor4b 0, 0, 0, Alpha
     ElseIf DataColor = 1 Then
-        glColor4b 0, 127, 0, Alpha
+        glColor4b 127, 0, 0, Alpha
     ElseIf DataColor = 2 Then
-        glColor4b 0, 0, 127, Alpha
+        glColor4b 0, 127, 0, Alpha
     ElseIf DataColor = 3 Then
-        glColor4b 127, 127, 0, Alpha
+        glColor4b 0, 0, 127, Alpha
     ElseIf DataColor = 4 Then
-        glColor4b 0, 127, 127, Alpha
+        glColor4b 127, 127, 0, Alpha
     ElseIf DataColor = 5 Then
-        glColor4b 63, 0, 127, Alpha
+        glColor4b 0, 127, 127, Alpha
     ElseIf DataColor = 6 Then
+        glColor4b 63, 0, 127, Alpha
+    ElseIf DataColor = 7 Then
         glColor4b 100, 100, 100, Alpha
     Else
-        glColor4b 0, 0, 0, Alpha
     End If
 End Sub
 
@@ -391,6 +267,8 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     Dim c As Integer
     Dim st As Integer
     Dim blk As String * 1
+    Dim ch As String * 1
+    Dim AscP As Integer
     Dim lastblk As String * 1
     Dim pblk As String * 1
     Dim steps As Integer
@@ -405,13 +283,16 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     Dim l As Integer
     Dim dti As Integer
     Dim df() As String
+    Dim lastd As Integer
+    Dim DAlpha As Integer
     
     Found = False
     For f = 0 To UBound(fields)
         eq = InStr(1, fields(f), ":")   ' Field has type:data pair ?
         If eq > 0 Then
-            FieldType = LCase(Left(fields(f), eq - 1))
-            FieldData = Right(fields(f), Len(fields(f)) - eq)
+            fields(f) = Replace(fields(f), Chr(9), " ")    ' Tab to space
+            FieldType = Trim(LCase(Left(fields(f), eq - 1)))
+            FieldData = Trim(Right(fields(f), Len(fields(f)) - eq))
             If FieldType = TypeMatch Then
                 Found = True
                 Exit For
@@ -428,8 +309,8 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
         If UBound(df) = 1 Then
             SetDataColor Val(df(1)), 63
             glBegin bmLines
-                glVertex2d df(0) * 15 + xmargin, 0
-                glVertex2d df(0) * 15 + xmargin, Form1.ScaleHeight
+                glVertex2d Val(df(0)) * 15 + xmargin, 0
+                glVertex2d Val(df(0)) * 15 + xmargin, Form1.ScaleHeight
             glEnd
         End If
     End If
@@ -437,7 +318,7 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     If FieldType = "name" Then
         WaveName = FieldData
         glColor4f 0, 0, 0, 1
-        dr_text WaveName, xmargin - (Len(WaveName) * 8) - 4, ydraw - 1
+        dr_text WaveName, -((Len(WaveName) * 8) - xmargin + 4), 0
     End If
 
     If FieldType = "data" Then
@@ -454,6 +335,10 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
         lastblk = "z"   ' Default block
         DataState = -1
         dti = 0
+        
+        glPushMatrix
+        glTranslatef xmargin, 0#, 0#
+        
         For c = 0 To Len(FieldData) - 1
             ' Draw
             xdraw = 64 + (c * 15)
@@ -466,12 +351,13 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
                 blk = pblk
             End If
             
-            If (Asc(pblk) >= &H30 And Asc(pblk) <= &H35) Or pblk = "=" Then   ' Start data
+            AscP = Asc(pblk)
+            If (AscP >= &H30 And AscP <= &H35) Or pblk = "=" Then   ' Start data
                 If DataState = -1 Then
                     If pblk = "=" Then
-                        DataColor = 6
+                        DataColor = 0
                     Else
-                        DataColor = Asc(pblk) - &H30
+                        DataColor = Asc(pblk) - &H31
                     End If
                     If Mid(FieldData, c + 2, 1) <> "." Then    ' Dangerous (+1 into void ?)
                         blk = "u"
@@ -480,7 +366,11 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
                     Else
                         DataState = 0
                     End If
+                    DAlpha = 31
                 End If
+            Else
+                DataColor = 0
+                DAlpha = 127
             End If
             
             If DataState = 0 Then
@@ -494,114 +384,82 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
             End If
             
             ' Look for block def
-            d = 0
-            Do While 1
-                If Layout(d).DCount = 0 Then Exit Do
-                If Layout(d).Ch = blk Then Exit Do
-                d = d + 1
-            Loop
+            If pblk <> "." Then
+                d = 0
+                Do While True
+                    ch = DispLists(d).Char
+                    If ch = " " Then
+                        d = 0
+                        Exit Do
+                    End If
+                    If ch = blk Then Exit Do
+                    d = d + 1
+                Loop
+            End If
+            
+            glColor4b 0, 0, 0, 127
             
             ' Transition
             If c > 0 Then
                 glBegin bmLines
-                    glVertex2d lastx, lasty
-                    glVertex2d Layout(d).SP.x + xdraw, Layout(d).SP.y + ydraw
+                    glVertex2d DispLists(lastd).EP.X - 15, DispLists(lastd).EP.Y
+                    glVertex2d DispLists(d).SP.X, DispLists(d).SP.Y
                 glEnd
             End If
             
-            For steps = 0 To Layout(d).DCount - 1
-                glColor4b 0, 0, 0, 127
-                
-                st = Layout(d).Drawstep(steps).t
-                
-                If st = 2 Then
-                    ' Line
-                    glBegin bmLines
-                        dr_point Layout(d).Drawstep(steps).P, 0
-                        dr_point Layout(d).Drawstep(steps).P, 2
-                    glEnd
-                ElseIf st = 3 Then
-                    ' Line strip
-                    glBegin bmLineStrip
-                    With Layout(d).Drawstep(steps)
-                        dr_point Layout(d).Drawstep(steps).P, 0
-                        For l = 2 To Layout(d).Drawstep(steps).PCount Step 2
-                            dr_point Layout(d).Drawstep(steps).P, l
-                        Next l
-                    End With
-                    glEnd
-                ElseIf st = 4 Then
-                    ' Polygon
-                    SetDataColor DataColor, 31
-                    glBegin bmPolygon
-                    With Layout(d).Drawstep(steps)
-                        dr_point Layout(d).Drawstep(steps).P, 0
-                        For l = 2 To Layout(d).Drawstep(steps).PCount Step 2
-                            dr_point Layout(d).Drawstep(steps).P, l
-                        Next l
-                    End With
-                    glEnd
-                End If
-            Next steps
+            SetDataColor DataColor, DAlpha
+            glCallList DispLists(d).DL
             
             If DataState = 0 Then DataState = 1
             If DataState = -2 Then
                 If (datatxt(0) <> "") Then
                     If dti <= UBound(datatxt) Then
                         SetDataColor DataColor, 127
-                        dr_text datatxt(dti), ((xdraw + dstart) / 2) - (Len(datatxt(dti)) * 8 / 2) + 8, ydraw - 1
+                        dr_text datatxt(dti), -(((xdraw - dstart) / 2) + (Len(datatxt(dti)) * 4)) + 7, 0
                         dti = dti + 1
                     End If
                 End If
                 DataState = -1
             End If
             
-            lastx = xdraw + Layout(d).EP.x
-            lasty = ydraw + Layout(d).EP.y
-            
             lastblk = pblk
-    
+            lastd = d
+            
+            glTranslatef 15, 0, 0
         Next c
+        
+        glPopMatrix
     End If
 End Sub
 
-Sub dr_text(txt As String, xdraw As Integer, ydraw As Integer)
+Sub dr_text(txt As String, xofs As Integer, yofs As Integer)
     Dim pch As Integer
     Dim sx, sy, ex, ey As Single
     Dim c As Integer
-    Dim xofs As Integer
+    
+    glPushMatrix
     
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
-    glEnable GL_TEXTURE_2D
-    'glTexEnvf GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE
+    glEnable glcTexture2D
     glBindTexture glTexture2D, Texture(0)
     
+    glTranslatef xofs, yofs, 0
+    
     For c = 0 To Len(txt) - 1
-        xofs = (c * 8) + xdraw
         pch = Asc(Mid(txt, c + 1, 1)) - 32
-        sx = ((pch Mod 16) / 16)
-        sy = 1 - ((pch \ 16) / 8)
-        ex = sx + (1 / 16)
-        ey = sy - (1 / 8)
-        
-        glBegin bmQuads
-            glTexCoord2f sx, sy
-            glVertex2f xofs, ydraw
-            glTexCoord2f ex, sy
-            glVertex2f 16 + xofs, ydraw
-            glTexCoord2f ex, ey
-            glVertex2f 16 + xofs, 16 + ydraw
-            glTexCoord2f sx, ey
-            glVertex2f xofs, 16 + ydraw
-        glEnd
+        glCallList CharDL(pch)
+        glTranslatef 8, 0, 0
     Next c
     
-    glDisable GL_TEXTURE_2D
+    glDisable glcTexture2D
     glBlendFunc GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
+    
+    glPopMatrix
+    
 End Sub
 
 Function MatchT(ByVal s As String) As Integer
-    If s = "SP" Then MatchT = 0      ' Start point
+    If s = "SP" Then MatchT = 0     ' Start point
     If s = "EP" Then MatchT = 1     ' End point
     If s = "L" Then MatchT = 2      ' Line
     If s = "LS" Then MatchT = 3     ' Line strip

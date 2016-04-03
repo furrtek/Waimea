@@ -20,16 +20,6 @@ Begin VB.Form Form1
       _Version        =   393216
       Filter          =   "Text files|*.txt"
    End
-   Begin VB.HScrollBar HScroll1 
-      Height          =   255
-      LargeChange     =   32
-      Left            =   120
-      Max             =   1024
-      SmallChange     =   8
-      TabIndex        =   1
-      Top             =   4200
-      Width           =   13935
-   End
    Begin VB.TextBox Text1 
       BeginProperty Font 
          Name            =   "Bitstream Vera Sans Mono"
@@ -84,9 +74,13 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
-Private Sub Form_Load()
-    Dim frm As Form
-    
+Dim Dragging As Boolean
+Dim Drag_X As Integer
+Dim Drag_Y As Integer
+Dim PrevNav_X As Integer
+Dim PrevNav_Y As Integer
+
+Sub LoadLayoutNew()
     Dim lidx As Integer
     Dim didx As Integer
     Dim lline As String
@@ -94,84 +88,164 @@ Private Sub Form_Load()
     Dim b() As String
     Dim pidx As Integer
     Dim t As Integer
-    Dim ln As String
+    Dim DataColor As Integer
     
     Dim c As Integer
     Dim d As Integer
     
-    xmargin = 64
+    Dim sx, sy, ex, ey As Single
     
-    FilePath = ""
-    SetSaveState False
+    ' Generate font (characters) display lists
+    For c = 0 To 128 - 1
+        sx = ((c Mod 16) / 16)
+        sy = 1 - ((c \ 16) / 8)
+        ex = sx + (1 / 16)
+        ey = sy - (1 / 8)
     
-    ' Parse layout file
+        CharDL(c) = glGenLists(1)
+        glNewList CharDL(c), GL_COMPILE
+            glBegin bmQuads
+                glTexCoord2f sx, sy
+                glVertex2f 0, 0
+                glTexCoord2f ex, sy
+                glVertex2f 16, 0
+                glTexCoord2f ex, ey
+                glVertex2f 16, 16
+                glTexCoord2f sx, ey
+                glVertex2f 0, 16
+            glEnd
+        glEndList
+    Next c
+    
     lidx = -1
     Open "layout.txt" For Input As #1
         Do
             Line Input #1, lline
             If lline <> "" Then
                 If InStr(1, UCase(lline), "DEF") Then
-                    If (lidx > -1) Then
-                        Layout(lidx).DCount = didx
-                    End If
-                    a = Split(lline, " ")
                     lidx = lidx + 1
-                    didx = 0
-                    Layout(lidx).Ch = a(1)
+                    If lidx > 0 Then glEndList
+                    DispLists(lidx).DL = glGenLists(1)
+                    glNewList DispLists(lidx).DL, GL_COMPILE
+                    
+                    a = Split(lline, " ")
+                    DispLists(lidx).Char = Left(a(1), 1)
                 Else
                     a = Split(lline, " ")
                     t = MatchT(a(0))
-                    Layout(lidx).Drawstep(didx).t = t    ' Type
+                    
                     If t < 2 Then
                         b = Split(a(1), ",")
                         If t = 0 Then
-                            Layout(lidx).SP.x = b(0)
-                            Layout(lidx).SP.y = b(1)
+                            DispLists(lidx).SP.X = b(0)
+                            DispLists(lidx).SP.Y = b(1)
                         ElseIf t = 1 Then
-                            Layout(lidx).EP.x = b(0)
-                            Layout(lidx).EP.y = b(1)
+                            DispLists(lidx).EP.X = b(0)
+                            DispLists(lidx).EP.Y = b(1)
                         End If
                     Else
                         lline = a(1)
-                        pidx = 0
                         a = Split(lline, ":")
-                        For c = 0 To UBound(a)
-                            b = Split(a(c), ",")
-                            For d = 0 To UBound(b)
-                                Layout(lidx).Drawstep(didx).P(pidx) = b(d)
-                                pidx = pidx + 1
-                            Next d
-                        Next c
-                        Layout(lidx).Drawstep(didx).PCount = pidx - 1
-                        didx = didx + 1
+
+                        If t = 2 Then
+                            ' Line
+                            glBegin bmLines
+                                b = Split(a(0), ",")
+                                glVertex2f b(0), b(1)
+                                b = Split(a(1), ",")
+                                glVertex2f b(0), b(1)
+                            glEnd
+                        ElseIf t = 3 Then
+                            ' Line strip
+                            glBegin bmLineStrip
+                            For c = 0 To UBound(a)
+                                b = Split(a(c), ",")
+                                glVertex2f b(0), b(1)
+                            Next c
+                            glEnd
+                        ElseIf t = 4 Then
+                            ' Polygon
+                            glBegin bmPolygon
+                            For c = 0 To UBound(a)
+                                b = Split(a(c), ",")
+                                glVertex2f b(0), b(1)
+                            Next c
+                            glEnd
+                        End If
                     End If
                 End If
             End If
         Loop While Not EOF(1)
-        Layout(lidx).DCount = didx
+        glEndList
     Close #1
     
-    Layout(lidx + 1).DCount = 0
+    DispLists(lidx + 1).Char = " "
+End Sub
+
+Private Sub Form_Load()
+    Dim ln As String
     
-    If Not CreateGLWindow(Me, 640, 480, 16, False) Then End
+    xmargin = 64
+    Nav_X = 0
+    Nav_Y = 16
     
+    FilePath = ""
+    SetSaveState False
+    
+    If Not CreateGLWindow(Me, 640, 480, 16) Then End    ' 24 ?
+
+    LoadLayoutNew
     LoadFont
     
+    'Dim tempdata() As GLbyte
+    'ReDim tempdata(3, 2047, 2047)
+    'glGenTextures 1, RenderTex
+    'glBindTexture glTexture2D, RenderTex
+    'glTexImage2D glTexture2D, 0, 4, 2048, 2048, 0, tiRGBA, GL_UNSIGNED_BYTE, tempdata(0, 0, 0)
+    'glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR
+    'glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR
+    'Erase tempdata
+    
     ' DEBUG ONLY !!!
+    Dim dbgload As String
+    
     FilePath = App.Path & "\waveform.txt"
     Open "waveform.txt" For Input As #1
-        Text1.Text = ""
+        dbgload = ""
         While Not EOF(1)
             Line Input #1, ln
-            Text1.Text = Text1.Text & ln & vbCrLf
+            dbgload = dbgload & ln & vbCrLf
         Wend
+        Text1.Text = dbgload
         DoEvents
         SetSaveState True
     Close #1
 End Sub
 
+Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dragging = True
+    PrevNav_X = Nav_X
+    PrevNav_Y = Nav_Y
+    Drag_X = X
+    Drag_Y = Y
+    Form1.MousePointer = vbSizeAll
+End Sub
+
+Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    If Dragging = True Then
+        Nav_X = PrevNav_X - (Drag_X - X)
+        Nav_Y = PrevNav_Y - (Drag_Y - Y)
+        Display
+    End If
+End Sub
+
+Private Sub Form_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dragging = False
+    Form1.MousePointer = vbDefault
+End Sub
+
 Private Sub Form_Paint()
-    Text1_Change
+    Redraw
 End Sub
 
 Function GetFileName(fn As String)
@@ -201,20 +275,15 @@ Private Sub Form_Resize()
     ReSizeGLScene ScaleWidth, ScaleHeight
     Text1.Top = Form1.ScaleHeight - Text1.Height - 8
     Text1.Width = Form1.ScaleWidth - 16
-    HScroll1.Top = Text1.Top - 24
-    HScroll1.Width = Form1.ScaleWidth - 18
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
     KillGLWindow
 End Sub
 
-Private Sub HScroll1_Change()
-    Text1_Change
-End Sub
-
-Private Sub HScroll1_Scroll()
-    Text1_Change
+Sub MoveView()
+    glMatrixMode mmModelView
+    glTranslatef 2, 1, 1
 End Sub
 
 Private Sub menu_about_Click()
@@ -288,8 +357,11 @@ End Sub
 
 Private Sub Text1_Change()
     SetSaveState False
-    DrawGLScene Form1
-    SwapBuffers Form1.hDC
+End Sub
+
+Sub Redraw()
+    Render Me
+    Display
 End Sub
 
 Sub SetSaveState(v As Boolean)
@@ -317,8 +389,5 @@ End Sub
 
 Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
     Keys(KeyCode) = False
-End Sub
-
-Private Sub Text2_Change()
-    Text1_Change
+    Redraw
 End Sub
