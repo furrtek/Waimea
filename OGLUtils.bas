@@ -285,6 +285,7 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     Dim df() As String
     Dim lastd As Integer
     Dim DAlpha As Integer
+    Dim sx, sy, ex, ey As Integer
     
     Found = False
     For f = 0 To UBound(fields)
@@ -401,10 +402,16 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
             
             ' Transition
             If c > 0 Then
-                glBegin bmLines
-                    glVertex2d DispLists(lastd).EP.X - 15, DispLists(lastd).EP.Y
-                    glVertex2d DispLists(d).SP.X, DispLists(d).SP.Y
-                glEnd
+                sx = DispLists(lastd).EP.X - 15
+                sy = DispLists(lastd).EP.Y
+                ex = DispLists(d).SP.X
+                ey = DispLists(d).SP.Y
+                If (sx <> ex) Or (sy <> ey) Then
+                    glBegin bmLines
+                        glVertex2d sx, sy
+                        glVertex2d ex, ey
+                    glEnd
+                End If
             End If
             
             SetDataColor DataColor, DAlpha
