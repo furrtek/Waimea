@@ -62,3 +62,11 @@ The drawing commands follow on the next line. The currently supported commands a
 Coordinates 0,0 are top-left.
 
 For example, drawing a filled square clockwise: `SH 0,0:16,0:16,16:0,16`
+
+# known bugs
+
+* No checking of layout.txt and texture files (TGAs) presence, will crash if not.
+* Might crash on badly formatted layout.txt file.
+* Live refresh setting doesn't do anything.
+* Settings not saved before exit.
+* Drag-scroll not well optimized, can be slow on some setups. Will have to draw in a buffer and scroll the buffer instead of redrawing everything each time.
