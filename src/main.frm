@@ -100,7 +100,7 @@ Private Sub Form_Load()
     
     XMargin = 64
     Nav_X = 0
-    Nav_Y = 16
+    Nav_Y = 0
     Spacing = 1
     LiveRefresh = True
     Loaded = False
@@ -176,12 +176,18 @@ Private Sub Form_Unload(Cancel As Integer)
 End Sub
 
 Private Sub Image1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dragging = True
-    PrevNav_X = Nav_X
-    PrevNav_Y = Nav_Y
-    Drag_X = X / 15
-    Drag_Y = Y / 15
-    Image1.MousePointer = vbSizeAll
+    If Button = 1 Then
+        Dragging = True
+        PrevNav_X = Nav_X
+        PrevNav_Y = Nav_Y
+        Drag_X = X / 15
+        Drag_Y = Y / 15
+        Image1.MousePointer = vbSizeAll
+    ElseIf Button = 2 Then
+        Nav_X = 0
+        Nav_Y = 0
+        Redraw
+    End If
 End Sub
 
 Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)

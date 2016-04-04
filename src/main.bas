@@ -83,6 +83,10 @@ Public Sub Display()
     glColor4b 0, 0, 0, 31
     glCallList TicksDL
     
+    glPopMatrix
+    glTranslatef 0, 20, 0
+    glPushMatrix
+    
     ' Draw waves
     For w = 0 To nWaves
         If glIsList(WaveDL(w)) = 1 Then glCallList WaveDL(w)
@@ -192,7 +196,7 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
         dti = 0
         
         glPushMatrix
-        glTranslatef XMargin, 0#, 0#
+        glTranslatef XMargin, 0, 0
         
         For c = 0 To Len(FieldData) - 1
             ' Draw
