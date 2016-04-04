@@ -201,7 +201,7 @@ Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y
         Nav_X = PrevNav_X - (Drag_X - X)
         Nav_Y = PrevNav_Y - (Drag_Y - Y)
         Display
-    Else
+    ElseIf Keys(18) = False Then
         PopupFlag = False
         For c = 0 To nPins - 1
             If (X > PinList(c).X - 10 + Nav_X) And _
@@ -328,7 +328,7 @@ End Sub
 Private Sub Text1_KeyDown(KeyCode As Integer, Shift As Integer)
     Dim w As Integer
 
-    If KeyCode = vbKeyControl And Keys(vbKeyControl) = False Then   ' Prevents retrig
+    If KeyCode = 18 And Keys(18) = False Then   ' Prevents Alt retrig
         ' Show all bubbles
         For w = 0 To nPins - 1
             PinList(w).Show = True
@@ -344,7 +344,7 @@ Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
     
     Keys(KeyCode) = False
     
-    If KeyCode = vbKeyControl Then
+    If KeyCode = 18 Then
         ' Hide all bubbles
         For w = 0 To nPins - 1
             PinList(w).Show = False
