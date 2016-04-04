@@ -11,7 +11,7 @@ Why VB6 ?
 * Rather slow execution, but here we only need fast drawing
 * Can't be worse than Java !
 * I believe that a web browser is a program to browse the web, not an application host
-* Not portable but should run in Wine :(
+* Not portable :( But should run in Wine :)
 
 Also: No install, no registry keys.
 
@@ -24,6 +24,11 @@ Also: No install, no registry keys.
 * Modifiable layout/appearence (not as flexible as Wavedrom)
 * Popup notes (pins)
 * To come: Export to image (and svg ?)
+
+## Usage ##
+
+* Holding Alt shows all popup notes
+* Right click reset view to origin
 
 # Syntax
 
