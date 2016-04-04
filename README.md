@@ -4,14 +4,26 @@ Compact chronogram editor for Windows using OpenGL, written in good ol' VB6.
 ![Waimea screenshot](screenshot.png)
 
 Why VB6 ?
+* I still live in 1999
 * Super fast dev cycle for GUI apps
 * Small executables
 * No framework, only requires a 1.3MB dll (msvbvm60.dll)
 * Rather slow execution, but here we only need fast drawing
-* Been using it for 15 years
-* Can't be worse than Java
+* Can't be worse than Java !
 * I believe that a web browser is a program to browse the web, not an application host
 * Not portable but should run in Wine :(
+
+Also: No install, no registry keys.
+
+# Features
+
+* Markdown syntax very similar to [Wavedrom](https://github.com/drom/wavedrom/)'s
+* Fast and clean OpenGL rendering
+* Drag-scroll for large chronograms
+* Rulers
+* Modifiable layout/appearence (not as flexible as Wavedrom)
+* To come: Popup notes
+* To come: Export to image (and svg ?)
 
 # Syntax
 
