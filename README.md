@@ -1,7 +1,7 @@
 # Waimea
 Compact chronogram editor for Windows using OpenGL, written in good ol' VB6.
 
-![Waimea screenshot](screenshot2.png)
+![Waimea screenshot](screenshot3.png)
 
 Why VB6 ?
 * I still live in 1999
