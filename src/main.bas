@@ -21,6 +21,8 @@ Private Type TPin
     Txt As String
 End Type
 
+Public Loaded As Boolean
+
 Public FontTex As GLuint
 Public PinTex As GLuint
 
@@ -31,9 +33,6 @@ Public nPins As Integer
 ' Settings
 Public LiveRefresh As Boolean
 Public Spacing As Single
-
-Public xdraw As Integer
-Public ydraw As Integer
 
 Public nWaves As Integer
 
@@ -53,178 +52,18 @@ Public FilePath As String
 Public XMargin As Integer
 
 Public Saved As Boolean
-Public datatxt() As String
+Public DataTxt() As String
 
 
 Public Keys(255) As Boolean             ' used to keep track of key_downs
 
 Private hrc As Long
 
-Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
-    If Height = 0 Then Height = 1
-    If Width = 0 Then Width = 1
-    
-    glViewport 0, 150, Width, Height - 150 ' Reset The Current Viewport
-    glMatrixMode mmProjection       ' Select The Projection Matrix
-    glLoadIdentity                  ' Reset The Projection Matrix
-
-    glOrtho 0#, Width, Height - 150, 0#, -1, 1
-
-    glMatrixMode mmModelView        ' Select The Modelview Matrix
-    glLoadIdentity                  ' Reset The Modelview Matrix
-    
-    RenderTicks
-End Sub
-
-Sub RenderTicks()
-    Dim c As Integer
-    Dim xpos As Single
-    
-    If glIsList(TicksDL) = 1 Then glDeleteLists TicksDL, 1
-    TicksDL = glGenLists(1)
-    glNewList TicksDL, GL_COMPILE
-        glBegin bmLines
-            xpos = XMargin
-            While (xpos < MainFrm.ScaleWidth)
-                glVertex2d xpos, 0
-                glVertex2d xpos, MainFrm.ScaleHeight
-                xpos = xpos + 15
-            Wend
-        glEnd
-    glEndList
-End Sub
-
-Public Function InitGL() As Boolean
-    glEnable glcTexture2D               ' Enable Texture Mapping ( NEW )
-    glShadeModel smFlat
-
-    glLineWidth 1
-
-    glShadeModel GL_SMOOTH
-
-    glClearDepth 1#                     ' Depth Buffer Setup
-    glHint GL_LINE_SMOOTH_HINT, GL_NICEST
-    glEnable GL_LINE_SMOOTH
-    
-    glEnable GL_BLEND
-
-    InitGL = True                       ' Initialization Went OK
-End Function
-
-Public Sub LoadFont()
-    Dim FontData() As GLbyte
-    Dim bd As Byte
-    Dim h, w As Integer
-    
-    ReDim FontData(3, 511, 255)
-    
-    Open "font.tga" For Binary As #1
-        Seek #1, 19
-        Get #1, , FontData
-    Close #1
-
-    glGenTextures 1, FontTex
-    glBindTexture glTexture2D, FontTex
-    glTexImage2D glTexture2D, 0, 4, 512, 256, 0, tiRGBA, GL_UNSIGNED_BYTE, FontData(0, 0, 0)
-    glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR     ' Linear Filtering
-    glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR     ' Linear Filtering
-    
-    Erase FontData
-End Sub
-
-Public Sub LoadPin()
-    Dim PinData() As GLbyte
-    Dim bd As Byte
-    Dim h, w As Integer
-    
-    ReDim PinData(3, 63, 63)
-    
-    Open "pin.tga" For Binary As #1
-        Seek #1, 19
-        Get #1, , PinData
-    Close #1
-
-    glGenTextures 1, PinTex
-    glBindTexture glTexture2D, PinTex
-    glTexImage2D glTexture2D, 0, 4, 64, 64, 0, tiRGBA, GL_UNSIGNED_BYTE, PinData(0, 0, 0)
-    glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR     ' Linear Filtering
-    glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR     ' Linear Filtering
-    
-    Erase PinData
-End Sub
-
-Public Sub KillGLWindow()
-    If hrc Then                                     ' Do We Have A Rendering Context?
-        If wglMakeCurrent(0, 0) = 0 Then             ' Are We Able To Release The DC And RC Contexts?
-            MsgBox "Release Of DC And RC Failed.", vbInformation, "SHUTDOWN ERROR"
-        End If
-
-        If wglDeleteContext(hrc) = 0 Then           ' Are We Able To Delete The RC?
-            MsgBox "Release Rendering Context Failed.", vbInformation, "SHUTDOWN ERROR"
-        End If
-        hrc = 0                                     ' Set RC To NULL
-    End If
-
-    ' Note
-    ' The form owns the device context (hDC) window handle (hWnd) and class (RTThundermain)
-    ' so we do not have to do all the extra work
-
-End Sub
-
-Public Function CreateGLWindow(frm As Form, Width As Integer, Height As Integer, Bits As Integer) As Boolean
-    Dim PixelFormat As GLuint                       ' Holds The Results After Searching For A Match
-    Dim pfd As PIXELFORMATDESCRIPTOR                ' pfd Tells Windows How We Want Things To Be
-
-    pfd.cColorBits = Bits
-    pfd.cDepthBits = 16
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW Or PFD_SUPPORT_OPENGL Or PFD_DOUBLEBUFFER
-    pfd.iLayerType = PFD_MAIN_PLANE
-    pfd.iPixelType = PFD_TYPE_RGBA
-    pfd.nSize = Len(pfd)
-    pfd.nVersion = 1
-    
-    PixelFormat = ChoosePixelFormat(GetDC(frm.hWnd), pfd)
-    If PixelFormat = 0 Then                     ' Did Windows Find A Matching Pixel Format?
-        KillGLWindow                            ' Reset The Display
-        MsgBox "Can't Find A Suitable PixelFormat.", vbExclamation, "ERROR"
-        CreateGLWindow = False                  ' Return FALSE
-    End If
-
-    If SetPixelFormat(GetDC(frm.hWnd), PixelFormat, pfd) = 0 Then ' Are We Able To Set The Pixel Format?
-        KillGLWindow                            ' Reset The Display
-        MsgBox "Can't Set The PixelFormat.", vbExclamation, "ERROR"
-        CreateGLWindow = False                           ' Return FALSE
-    End If
-    
-    hrc = wglCreateContext(GetDC(frm.hWnd))
-    If (hrc = 0) Then                           ' Are We Able To Get A Rendering Context?
-        KillGLWindow                            ' Reset The Display
-        MsgBox "Can't Create A GL Rendering Context.", vbExclamation, "ERROR"
-        CreateGLWindow = False                  ' Return FALSE
-    End If
-
-    If wglMakeCurrent(GetDC(frm.hWnd), hrc) = 0 Then    ' Try To Activate The Rendering Context
-        KillGLWindow                            ' Reset The Display
-        MsgBox "Can't Activate The GL Rendering Context.", vbExclamation, "ERROR"
-        CreateGLWindow = False                  ' Return FALSE
-    End If
-    frm.Show                                    ' Show The Window
-    SetForegroundWindow frm.hWnd                ' Slightly Higher Priority
-    frm.SetFocus                                ' Sets Keyboard Focus To The Window
-    ReSizeGLScene frm.ScaleWidth, frm.ScaleHeight ' Set Up Our Perspective GL Screen
-
-    If Not InitGL() Then                        ' Initialize Our Newly Created GL Window
-        KillGLWindow                            ' Reset The Display
-        MsgBox "Initialization Failed.", vbExclamation, "ERROR"
-        CreateGLWindow = False                   ' Return FALSE
-    End If
-
-    CreateGLWindow = True                       ' Success
-End Function
-
 Public Sub Display()
     Dim w As Integer
     Dim PinTextLen As Integer
+    
+    If Loaded = False Then Exit Sub
     
     glMatrixMode mmModelView        ' Select The Modelview Matrix
     glLoadIdentity                  ' Reset The Modelview Matrix
@@ -238,196 +77,80 @@ Public Sub Display()
     glTranslatef Nav_X, Nav_Y, 0#
     glPushMatrix
     
+    glScalef Spacing, 1, 1
+    
     ' Draw ticks
     glColor4b 0, 0, 0, 31
-    glScalef Spacing, 1, 1
     glCallList TicksDL
     
+    ' Draw waves
     For w = 0 To nWaves
         If glIsList(WaveDL(w)) = 1 Then glCallList WaveDL(w)
     Next w
-    
-    glPopMatrix
-    glPushMatrix
     
     ' Draw pins
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     glEnable glcTexture2D
     glBindTexture glTexture2D, PinTex
     For w = 0 To nPins - 1
-        glTranslatef PinList(w).X, PinList(w).Y, 0
+        glPopMatrix
+        glPushMatrix
+        glTranslatef (PinList(w).X * Spacing) - 10, PinList(w).Y, 0
         SetDataColor PinList(w).Color, 127
         glCallList PinDL
     Next w
     glDisable glcTexture2D
     
-    glPopMatrix
     ' Draw pin bubble if needed
     For w = 0 To nPins - 1
         If PinList(w).Show = True Then
+            glPopMatrix
+            glPushMatrix
             PinTextLen = Len(PinList(w).Txt) * 8 + 16
-            glTranslatef PinList(w).X + 10, PinList(w).Y + 10, 0
-            glColor4b 120, 120, 120, 120
+            glTranslatef PinList(w).X + 8, PinList(w).Y + 10, 0
+            glColor4b 120, 120, 120, 90
             glBegin bmPolygon
                 glVertex2f 0, 0
-                glVertex2f 8, -4
                 glVertex2f 8, -8
                 glVertex2f PinTextLen, -8
                 glVertex2f PinTextLen, 8
                 glVertex2f 8, 8
-                glVertex2f 8, 4
                 glVertex2f 0, 0
             glEnd
-            SetDataColor PinList(w).Color, 100
+            SetDataColor PinList(w).Color, 70
             glBegin bmLineStrip
                 glVertex2f 0, 0
-                glVertex2f 8, -4
                 glVertex2f 8, -8
                 glVertex2f PinTextLen, -8
                 glVertex2f PinTextLen, 8
                 glVertex2f 8, 8
-                glVertex2f 8, 4
                 glVertex2f 0, 0
             glEnd
             SetDataColor PinList(w).Color, 127
-            dr_text PinList(w).Txt, 12, -8
-            Exit For    ' Only one can be shown at a time
+            RenderText PinList(w).Txt, 12, -8
         End If
     Next w
+    
+    glPopMatrix
 
     SwapBuffers MainFrm.hDC
 End Sub
 
-Public Sub Render(frm As Form)
-    Dim c As Integer
-    Dim xpos As Single
-    Dim d As Integer
-    Dim wavedef As String
-    Dim waves() As String
-    Dim fields() As String
-    Dim w As Integer
-
-    wavedef = MainFrm.Text1.Text
-    
-    ' For each line...
-    waves = Split(wavedef, vbCrLf)
-    nWaves = UBound(waves)
-    nPins = 0
-    For w = 0 To nWaves
-        ReDim datatxt(1)
-        datatxt(0) = ""
-        HasName = False
-        fields = Split(waves(w), ";")
-        If glIsList(WaveDL(w)) = 1 Then glDeleteLists WaveDL(w), 1
-        WaveDL(w) = glGenLists(1)
-        glNewList WaveDL(w), GL_COMPILE
-            ProcessFields fields, "name", w
-            ProcessFields fields, "data", w
-            ProcessFields fields, "wave", w
-            ProcessFields fields, "ruler", w
-            ProcessFields fields, "pin", w
-            glTranslatef 0#, 20#, 0#    ' Next line
-        glEndList
-    Next w
-End Sub
-
-Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
-    If DataColor = 0 Then
-        glColor4b 0, 0, 0, Alpha    ' Black
-    ElseIf DataColor = 1 Then
-        glColor4b 127, 0, 0, Alpha  ' Red
-    ElseIf DataColor = 2 Then
-        glColor4b 0, 127, 0, Alpha  ' Green
-    ElseIf DataColor = 3 Then
-        glColor4b 0, 0, 127, Alpha  ' Blue
-    ElseIf DataColor = 4 Then
-        glColor4b 127, 127, 0, Alpha    ' Yellow
-    ElseIf DataColor = 5 Then
-        glColor4b 0, 127, 127, Alpha    ' Cyan
-    ElseIf DataColor = 6 Then
-        glColor4b 63, 0, 127, Alpha     ' Purple
-    ElseIf DataColor = 7 Then
-        glColor4b 100, 100, 100, Alpha  ' Grey
-    Else
-        glColor4b 0, 0, 0, Alpha    ' Default
-    End If
-End Sub
-
-Sub RenderRuler(FieldData As String)
-    Dim DF() As String
-    
-    DF = Split(FieldData, ",")
-    If UBound(DF) = 1 Then
-        glPopMatrix
-        glPushMatrix
-        SetDataColor Val(DF(1)), 63
-        glBegin bmLines
-            glVertex2d Val(DF(0)) * 15 + XMargin, 0
-            glVertex2d Val(DF(0)) * 15 + XMargin, MainFrm.ScaleHeight
-        glEnd
-    End If
-End Sub
-
-Sub RenderData(FieldData As String)
-    Dim DF() As String
-    Dim f As Integer
-    
-    DF = Split(FieldData, ",")
-    If UBound(DF) >= 0 Then
-        ReDim datatxt(UBound(DF))
-        For f = 0 To UBound(DF)
-            datatxt(f) = DF(f)
-        Next f
-    End If
-End Sub
-
-Sub RenderPin(FieldData As String, YPos As Integer)
-    Dim DF() As String
-    Dim f As Integer
-    
-    DF = Split(FieldData, ",")
-    If UBound(DF) > 1 Then
-        If HasName = True Then  ' Not necessary
-            PinList(nPins).X = 15 * DF(0) - 10 + XMargin
-            PinList(nPins).Y = YPos - 9
-            PinList(nPins).Color = Val(DF(1))
-            PinList(nPins).Txt = DF(2)
-            nPins = nPins + 1
-        End If
-    End If
-End Sub
-
-Sub RenderName(FieldData As String)
-    glColor4b 0, 0, 0, 127
-    dr_text FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0
-    HasName = True
-End Sub
-
-Function NextIsDot(FieldData As String, c As Integer) As Boolean
-    If c <= Len(FieldData) Then
-        If Mid(FieldData, c + 2, 1) = "." Then
-            NextIsDot = True
-        Else
-            NextIsDot = False
-        End If
-    Else
-        NextIsDot = False
-    End If
-End Function
-
 Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
+    Dim XDraw As Integer
+    Dim YDraw As Integer
     Dim c As Integer
     Dim st As Integer
     Dim blk As String * 1
     Dim ch As String * 1
     Dim AscP As Integer
-    Dim lastblk As String * 1
-    Dim pblk As String * 1
-    Dim steps As Integer
-    Dim wavedef As String
+    Dim LastBlk As String * 1
+    Dim PBlk As String * 1
+    Dim Steps As Integer
+    Dim WaveDef As String
     Dim DataColor As Integer
     Dim DataState As Integer
-    Dim dstart As Integer
+    Dim DStart As Integer
     Dim eq, f, d As Integer
     Dim FieldType As String
     Dim FieldData As String
@@ -435,7 +158,7 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     Dim l As Integer
     Dim dti As Integer
     Dim DF() As String
-    Dim lastd As Integer
+    Dim LastD As Integer
     Dim DAlpha As Integer
     Dim sx, sy, ex, ey As Integer
     
@@ -464,7 +187,7 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     ElseIf FieldType = "pin" Then
         RenderPin FieldData, w * 20
     ElseIf FieldType = "wave" Then
-        lastblk = "z"   ' Default block
+        LastBlk = "z"   ' Default block
         DataState = -1
         dti = 0
         
@@ -473,27 +196,27 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
         
         For c = 0 To Len(FieldData) - 1
             ' Draw
-            xdraw = XMargin + (c * 15)
+            XDraw = XMargin + (c * 15)
             
-            pblk = Mid(FieldData, c + 1, 1)
-            blk = pblk
+            PBlk = Mid(FieldData, c + 1, 1)
+            blk = PBlk
             
-            If pblk = "." Then
-                pblk = lastblk     ' Repeat
-                blk = pblk
+            If PBlk = "." Then
+                PBlk = LastBlk     ' Repeat
+                blk = PBlk
             End If
             
-            AscP = Asc(pblk)
-            If (AscP >= &H30 And AscP <= &H36) Or pblk = "=" Then   ' Start data
+            AscP = Asc(PBlk)
+            If (AscP >= &H30 And AscP <= &H36) Or PBlk = "=" Then   ' Start data
                 If DataState = -1 Then
-                    If pblk = "=" Then
+                    If PBlk = "=" Then
                         DataColor = 0
                     Else
-                        DataColor = Asc(pblk) - &H30
+                        DataColor = Asc(PBlk) - &H30
                     End If
                     If Not NextIsDot(FieldData, c) Then
                         blk = "u"
-                        dstart = xdraw
+                        DStart = XDraw
                         DataState = -2
                     Else
                         DataState = 0
@@ -506,17 +229,17 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
             End If
             
             If DataState = 0 Then
-                dstart = xdraw
+                DStart = XDraw
                 blk = "s"
             End If
             If DataState = 1 Then blk = "d"
-            If DataState > -1 And Not NextIsDot(FieldData, c) Then    ' Dangerous (+1 into void ?)
+            If DataState > -1 And Not NextIsDot(FieldData, c) Then
                 blk = "e"
                 DataState = -2
             End If
             
             ' Look for block def
-            If pblk <> "." Then
+            If PBlk <> "." Then
                 d = 0
                 Do While True
                     ch = DispLists(d).Char
@@ -533,8 +256,8 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
             
             ' Transition
             If c > 0 Then
-                sx = DispLists(lastd).EP.X - 15
-                sy = DispLists(lastd).EP.Y
+                sx = DispLists(LastD).EP.X - 15
+                sy = DispLists(LastD).EP.Y
                 ex = DispLists(d).SP.X
                 ey = DispLists(d).SP.Y
                 If (sx <> ex) Or (sy <> ey) Then
@@ -550,18 +273,18 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
             
             If DataState = 0 Then DataState = 1
             If DataState = -2 Then
-                If (datatxt(0) <> "") Then
-                    If dti <= UBound(datatxt) Then
+                If (DataTxt(0) <> "") Then
+                    If dti <= UBound(DataTxt) Then
                         SetDataColor DataColor, 127
-                        dr_text datatxt(dti), -(((xdraw - dstart) / 2) + (Len(datatxt(dti)) * 4)) + 7, 0
+                        RenderText DataTxt(dti), -(((XDraw - DStart) / 2) + (Len(DataTxt(dti)) * 4)) + 7, 0
                         dti = dti + 1
                     End If
                 End If
                 DataState = -1
             End If
             
-            lastblk = pblk
-            lastd = d
+            LastBlk = PBlk
+            LastD = d
             
             glTranslatef 15, 0, 0
         Next c
@@ -569,36 +292,3 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
         glPopMatrix
     End If
 End Sub
-
-Sub dr_text(Txt As String, xofs As Integer, yofs As Integer)
-    Dim pch As Integer
-    Dim sx, sy, ex, ey As Single
-    Dim c As Integer
-    
-    glPushMatrix
-    
-    glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
-    glEnable glcTexture2D
-    glBindTexture glTexture2D, FontTex
-    
-    glTranslatef xofs, yofs, 0
-    
-    For c = 0 To Len(Txt) - 1
-        pch = Asc(Mid(Txt, c + 1, 1)) - 32
-        glCallList CharDL(pch)
-        glTranslatef 8, 0, 0
-    Next c
-    
-    glDisable glcTexture2D
-    
-    glPopMatrix
-    
-End Sub
-
-Function MatchT(ByVal s As String) As Integer
-    If s = "SP" Then MatchT = 0     ' Start point
-    If s = "EP" Then MatchT = 1     ' End point
-    If s = "L" Then MatchT = 2      ' Line
-    If s = "LS" Then MatchT = 3     ' Line strip
-    If s = "SH" Then MatchT = 4     ' Polygon
-End Function

@@ -5,13 +5,12 @@ Begin VB.Form MainFrm
    ClientHeight    =   6750
    ClientLeft      =   60
    ClientTop       =   630
-   ClientWidth     =   14235
+   ClientWidth     =   14175
    Icon            =   "main.frx":0000
    LinkTopic       =   "Form1"
-   MousePointer    =   2  'Cross
    ScaleHeight     =   450
    ScaleMode       =   3  'Pixel
-   ScaleWidth      =   949
+   ScaleWidth      =   945
    StartUpPosition =   2  'CenterScreen
    Begin MSComDlg.CommonDialog CommonDialog1 
       Left            =   120
@@ -33,12 +32,18 @@ Begin VB.Form MainFrm
       EndProperty
       Height          =   2085
       Left            =   120
-      MousePointer    =   3  'I-Beam
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
       TabIndex        =   0
       Top             =   4560
       Width           =   13935
+   End
+   Begin VB.Image Image1 
+      Height          =   4455
+      Left            =   0
+      MousePointer    =   2  'Cross
+      Top             =   0
+      Width           =   14175
    End
    Begin VB.Menu menu_sheet 
       Caption         =   "Sheet"
@@ -81,128 +86,12 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+Dim JustLoaded As Boolean
 Dim Dragging As Boolean
 Dim Drag_X As Integer
 Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
-
-Sub LoadLayout()
-    Dim lidx As Integer
-    Dim didx As Integer
-    Dim lline As String
-    Dim a() As String
-    Dim b() As String
-    Dim pidx As Integer
-    Dim t As Integer
-    Dim DataColor As Integer
-    
-    Dim c As Integer
-    Dim d As Integer
-    
-    Dim sx, sy, ex, ey As Single
-    
-    ' Pin display list
-    PinDL = glGenLists(1)
-    glNewList PinDL, GL_COMPILE
-        glBegin bmQuads
-            glTexCoord2f 0, 1
-            glVertex2f 0, 0
-            glTexCoord2f 1, 1
-            glVertex2f 20, 0
-            glTexCoord2f 1, 0
-            glVertex2f 20, 20
-            glTexCoord2f 0, 0
-            glVertex2f 0, 20
-        glEnd
-    glEndList
-    
-    ' Generate font (characters) display lists
-    For c = 0 To 128 - 1
-        sx = ((c Mod 16) / 16)
-        sy = 1 - ((c \ 16) / 8)
-        ex = sx + (1 / 16)
-        ey = sy - (1 / 8)
-    
-        CharDL(c) = glGenLists(1)
-        glNewList CharDL(c), GL_COMPILE
-            glBegin bmQuads
-                glTexCoord2f sx, sy
-                glVertex2f 0, 0
-                glTexCoord2f ex, sy
-                glVertex2f 16, 0
-                glTexCoord2f ex, ey
-                glVertex2f 16, 16
-                glTexCoord2f sx, ey
-                glVertex2f 0, 16
-            glEnd
-        glEndList
-    Next c
-    
-    lidx = -1
-    Open "layout.txt" For Input As #1
-        Do
-            Line Input #1, lline
-            If lline <> "" Then
-                If InStr(1, UCase(lline), "DEF") Then
-                    lidx = lidx + 1
-                    If lidx > 0 Then glEndList
-                    DispLists(lidx).DL = glGenLists(1)
-                    glNewList DispLists(lidx).DL, GL_COMPILE
-                    
-                    a = Split(lline, " ")
-                    DispLists(lidx).Char = Left(a(1), 1)
-                Else
-                    a = Split(lline, " ")
-                    t = MatchT(a(0))
-                    
-                    If t < 2 Then
-                        b = Split(a(1), ",")
-                        If t = 0 Then
-                            DispLists(lidx).SP.X = b(0)
-                            DispLists(lidx).SP.Y = b(1)
-                        ElseIf t = 1 Then
-                            DispLists(lidx).EP.X = b(0)
-                            DispLists(lidx).EP.Y = b(1)
-                        End If
-                    Else
-                        lline = a(1)
-                        a = Split(lline, ":")
-
-                        If t = 2 Then
-                            ' Line
-                            glBegin bmLines
-                                b = Split(a(0), ",")
-                                glVertex2f b(0), b(1)
-                                b = Split(a(1), ",")
-                                glVertex2f b(0), b(1)
-                            glEnd
-                        ElseIf t = 3 Then
-                            ' Line strip
-                            glBegin bmLineStrip
-                            For c = 0 To UBound(a)
-                                b = Split(a(c), ",")
-                                glVertex2f b(0), b(1)
-                            Next c
-                            glEnd
-                        ElseIf t = 4 Then
-                            ' Polygon
-                            glBegin bmPolygon
-                            For c = 0 To UBound(a)
-                                b = Split(a(c), ",")
-                                glVertex2f b(0), b(1)
-                            Next c
-                            glEnd
-                        End If
-                    End If
-                End If
-            End If
-        Loop While Not EOF(1)
-        glEndList
-    Close #1
-    
-    DispLists(lidx + 1).Char = " "
-End Sub
 
 Private Sub Form_Load()
     On Error GoTo skipdebug
@@ -214,16 +103,16 @@ Private Sub Form_Load()
     Nav_Y = 16
     Spacing = 1
     LiveRefresh = True
+    Loaded = False
     
     FilePath = ""
     SetSaveState False
     
-    If Not CreateGLWindow(Me, 640, 480, 16) Then End    ' 24 ?
-
+    If Not CreateGLWindow(640, 480, 16) Then End    ' 24 ?
+    
     LoadLayout
     LoadFont
     LoadPin
-    SetSaveState True
     
     ' FOR DEBUG ONLY !
     Dim dbgload As String
@@ -234,10 +123,15 @@ Private Sub Form_Load()
             Line Input #1, ln
             dbgload = dbgload & ln & vbCrLf
         Wend
+        JustLoaded = True
         Text1.Text = dbgload
         DoEvents
         SetSaveState True
     Close #1
+    
+    Loaded = True
+    
+    Redraw
 
     Exit Sub
 
@@ -245,64 +139,10 @@ skipdebug:
     If Err.Number <> 53 Then MsgBox "Error in load.", vbCritical
 End Sub
 
-Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dragging = True
-    PrevNav_X = Nav_X
-    PrevNav_Y = Nav_Y
-    Drag_X = X
-    Drag_Y = Y
-    MainFrm.MousePointer = vbSizeAll
-End Sub
-
-Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dim c As Integer
-    Dim PopupFlag As Boolean
-    
-    If Dragging = True Then
-        Nav_X = PrevNav_X - (Drag_X - X)
-        Nav_Y = PrevNav_Y - (Drag_Y - Y)
-        Display
-    Else
-        PopupFlag = False
-        For c = 0 To nPins - 1
-            If (X > PinList(c).X + Nav_X) And _
-                (X < PinList(c).X + 20 + Nav_X) And _
-                (Y > PinList(c).Y + Nav_Y) And _
-                (Y < PinList(c).Y + 20 + Nav_Y) Then
-                If PinList(c).Show = False Then
-                    PopupFlag = True
-                    PinList(c).Show = True
-                End If
-            Else
-                If PinList(c).Show = True Then
-                    PopupFlag = True
-                    PinList(c).Show = False
-                End If
-            End If
-        Next c
-        If PopupFlag = True Then Redraw
-    End If
-End Sub
-
-Private Sub Form_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dragging = False
-    MainFrm.MousePointer = vbCrosshair
-End Sub
-
 Private Sub Form_Paint()
     Redraw
 End Sub
 
-Function GetFileName(fn As String)
-    Dim pos As Integer
-    
-    pos = 1
-    While InStr(pos, fn, "\") > 0
-        pos = InStr(pos, fn, "\") + 1
-    Wend
-    
-    GetFileName = Right(fn, Len(fn) - pos + 1)
-End Function
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     Dim Done As Boolean
@@ -326,6 +166,8 @@ Private Sub Form_Resize()
     If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
         Text1.Top = MainFrm.ScaleHeight - Text1.Height - 8
         Text1.Width = MainFrm.ScaleWidth - 16
+        Image1.Width = MainFrm.ScaleWidth
+        Image1.Height = MainFrm.ScaleHeight - Text1.Height - 8
     End If
 End Sub
 
@@ -333,9 +175,51 @@ Private Sub Form_Unload(Cancel As Integer)
     KillGLWindow
 End Sub
 
-Sub MoveView()
-    glMatrixMode mmModelView
-    glTranslatef 2, 1, 1
+Private Sub Image1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dragging = True
+    PrevNav_X = Nav_X
+    PrevNav_Y = Nav_Y
+    Drag_X = X / 15
+    Drag_Y = Y / 15
+    Image1.MousePointer = vbSizeAll
+End Sub
+
+Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dim c As Integer
+    Dim PopupFlag As Boolean
+    
+    X = X / 15
+    Y = Y / 15
+    
+    If Dragging = True Then
+        Nav_X = PrevNav_X - (Drag_X - X)
+        Nav_Y = PrevNav_Y - (Drag_Y - Y)
+        Display
+    Else
+        PopupFlag = False
+        For c = 0 To nPins - 1
+            If (X > PinList(c).X - 10 + Nav_X) And _
+                (X < PinList(c).X + 10 + Nav_X) And _
+                (Y > PinList(c).Y + Nav_Y) And _
+                (Y < PinList(c).Y + 20 + Nav_Y) Then
+                If PinList(c).Show = False Then
+                    PopupFlag = True
+                    PinList(c).Show = True
+                End If
+            Else
+                If PinList(c).Show = True Then
+                    PopupFlag = True
+                    PinList(c).Show = False
+                End If
+            End If
+        Next c
+        If PopupFlag = True Then Redraw
+    End If
+End Sub
+
+Private Sub Image1_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dragging = False
+    Image1.MousePointer = vbCrosshair
 End Sub
 
 Private Sub menu_about_Click()
@@ -345,11 +229,6 @@ End Sub
 Private Sub menu_export_Click()
     MsgBox "Not implemented yet"
 End Sub
-
-Function Confirm() As Boolean
-    Confirm = False
-    If MsgBox("Discard unsaved data ?", vbYesNo + vbQuestion) = vbYes Then Confirm = True
-End Function
 
 Private Sub menu_open_Click()
     On Error GoTo Abort
@@ -370,6 +249,7 @@ Private Sub menu_open_Click()
             Line Input #1, ln
             LoadStr = LoadStr & ln & vbCrLf
         Wend
+        JustLoaded = True
         Text1.Text = LoadStr
         DoEvents
         FilePath = CommonDialog1.FileName
@@ -416,12 +296,8 @@ Private Sub menu_settings_Click()
 End Sub
 
 Private Sub Text1_Change()
-    SetSaveState False
-End Sub
-
-Sub Redraw()
-    Render Me
-    Display
+    If JustLoaded = False Then SetSaveState False
+    JustLoaded = False
 End Sub
 
 Sub SetSaveState(v As Boolean)
@@ -444,10 +320,32 @@ Sub SetFormTitle()
 End Sub
 
 Private Sub Text1_KeyDown(KeyCode As Integer, Shift As Integer)
+    Dim w As Integer
+
+    If KeyCode = vbKeyControl And Keys(vbKeyControl) = False Then   ' Prevents retrig
+        ' Show all bubbles
+        For w = 0 To nPins - 1
+            PinList(w).Show = True
+        Next w
+        Redraw
+    End If
+    
     Keys(KeyCode) = True
 End Sub
 
 Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
+    Dim w As Integer
+    
     Keys(KeyCode) = False
-    Redraw
+    
+    If KeyCode = vbKeyControl Then
+        ' Hide all bubbles
+        For w = 0 To nPins - 1
+            PinList(w).Show = False
+        Next w
+        Redraw
+    ElseIf KeyCode < 112 Or KeyCode > 123 Then
+        If LiveRefresh = True Then Redraw
+    End If
 End Sub
+

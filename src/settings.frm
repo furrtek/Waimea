@@ -17,7 +17,7 @@ Begin VB.Form SettingsFrm
       Caption         =   "Cancel"
       Height          =   495
       Left            =   1680
-      TabIndex        =   4
+      TabIndex        =   1
       Top             =   1560
       Width           =   1335
    End
@@ -25,7 +25,7 @@ Begin VB.Form SettingsFrm
       Caption         =   "Ok"
       Height          =   495
       Left            =   3120
-      TabIndex        =   3
+      TabIndex        =   0
       Top             =   1560
       Width           =   1335
    End
@@ -33,7 +33,7 @@ Begin VB.Form SettingsFrm
       Caption         =   "Live refresh"
       Height          =   255
       Left            =   120
-      TabIndex        =   1
+      TabIndex        =   3
       Top             =   840
       Width           =   1215
    End
@@ -43,7 +43,7 @@ Begin VB.Form SettingsFrm
       Left            =   120
       Max             =   100
       Min             =   1
-      TabIndex        =   0
+      TabIndex        =   2
       Top             =   360
       Value           =   1
       Width           =   4455
@@ -52,7 +52,7 @@ Begin VB.Form SettingsFrm
       Caption         =   "Scaling:"
       Height          =   255
       Left            =   120
-      TabIndex        =   2
+      TabIndex        =   4
       Top             =   120
       Width           =   1215
    End
@@ -91,10 +91,10 @@ Private Sub Form_Load()
     
     LocalSpacing = Spacing
     
-    HScroll1.Value = LocalSpacing * 2
+    HScroll1.Value = LocalSpacing * 10
 End Sub
 
 Private Sub HScroll1_Change()
-    LocalSpacing = HScroll1.Value / 2
+    LocalSpacing = HScroll1.Value / 10
     Label1.Caption = "Scaling: " & LocalSpacing
 End Sub
