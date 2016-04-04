@@ -223,11 +223,12 @@ Private Sub Form_Load()
     LoadLayout
     LoadFont
     LoadPin
+    SetSaveState True
     
     ' FOR DEBUG ONLY !
     Dim dbgload As String
     FilePath = App.Path & "\waveform.txt"
-    Open "waveform.txt" For Input As #1
+    Open FilePath For Input As #1
         dbgload = ""
         While Not EOF(1)
             Line Input #1, ln
@@ -354,6 +355,7 @@ Private Sub menu_open_Click()
     On Error GoTo Abort
     
     Dim ln As String
+    Dim LoadStr As String
     
     CommonDialog1.DialogTitle = "Open waveform file"
     CommonDialog1.ShowOpen
@@ -363,11 +365,14 @@ Private Sub menu_open_Click()
     End If
     
     Open CommonDialog1.FileName For Input As #1
-        Text1.Text = ""
+        LoadStr = ""
         While Not EOF(1)
             Line Input #1, ln
-            Text1.Text = Text1.Text & ln & vbCrLf
+            LoadStr = LoadStr & ln & vbCrLf
         Wend
+        Text1.Text = LoadStr
+        DoEvents
+        FilePath = CommonDialog1.FileName
         SetSaveState True
     Close #1
     
