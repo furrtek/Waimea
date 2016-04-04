@@ -1,11 +1,12 @@
 Type=Exe
 Reference=*\G{00020430-0000-0000-C000-000000000046}#2.0#0#..\..\..\..\..\Windows\SysWOW64\stdole2.tlb#OLE Automation
-Reference=*\G{03644881-8010-11D1-95AA-000000000000}#1.1#0#..\..\GLTutor\vbogl.tlb#VB OpenGL API 1.2 (ANSI)
+Reference=*\G{03644881-8010-11D1-95AA-000000000000}#1.1#0#vbogl.tlb#VB OpenGL API 1.2 (ANSI)
 Object={F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0; comdlg32.ocx
-Form=Form1.frm
-Module=OGLUtils; OGLUtils.bas
-IconForm="Form1"
-Startup="Form1"
+Form=main.frm
+Form=settings.frm
+Module=MainMd; main.bas
+IconForm="MainFrm"
+Startup="MainFrm"
 HelpFile=""
 Title="Waimea"
 ExeName32="waimea.exe"

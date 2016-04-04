@@ -1,13 +1,14 @@
 VERSION 5.00
 Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
-Begin VB.Form Form1 
+Begin VB.Form MainFrm 
    Caption         =   "Waimea"
    ClientHeight    =   6750
    ClientLeft      =   60
    ClientTop       =   630
    ClientWidth     =   14235
-   Icon            =   "Form1.frx":0000
+   Icon            =   "main.frx":0000
    LinkTopic       =   "Form1"
+   MousePointer    =   2  'Cross
    ScaleHeight     =   450
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   949
@@ -32,10 +33,10 @@ Begin VB.Form Form1
       EndProperty
       Height          =   2085
       Left            =   120
+      MousePointer    =   3  'I-Beam
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
       TabIndex        =   0
-      Text            =   "Form1.frx":0E42
       Top             =   4560
       Width           =   13935
    End
@@ -60,6 +61,12 @@ Begin VB.Form Form1
          Shortcut        =   ^E
       End
    End
+   Begin VB.Menu menu_tools 
+      Caption         =   "Tools"
+      Begin VB.Menu menu_settings 
+         Caption         =   "Settings"
+      End
+   End
    Begin VB.Menu menu_help 
       Caption         =   "?"
       Begin VB.Menu menu_about 
@@ -67,7 +74,7 @@ Begin VB.Form Form1
       End
    End
 End
-Attribute VB_Name = "Form1"
+Attribute VB_Name = "MainFrm"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -80,7 +87,7 @@ Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
 
-Sub LoadLayoutNew()
+Sub LoadLayout()
     Dim lidx As Integer
     Dim didx As Integer
     Dim lline As String
@@ -94,6 +101,21 @@ Sub LoadLayoutNew()
     Dim d As Integer
     
     Dim sx, sy, ex, ey As Single
+    
+    ' Pin display list
+    PinDL = glGenLists(1)
+    glNewList PinDL, GL_COMPILE
+        glBegin bmQuads
+            glTexCoord2f 0, 1
+            glVertex2f 0, 0
+            glTexCoord2f 1, 1
+            glVertex2f 20, 0
+            glTexCoord2f 1, 0
+            glVertex2f 20, 20
+            glTexCoord2f 0, 0
+            glVertex2f 0, 20
+        glEnd
+    glEndList
     
     ' Generate font (characters) display lists
     For c = 0 To 128 - 1
@@ -185,26 +207,20 @@ End Sub
 Private Sub Form_Load()
     Dim ln As String
     
-    xmargin = 64
+    XMargin = 64
     Nav_X = 0
     Nav_Y = 16
+    Spacing = 1
+    LiveRefresh = True
     
     FilePath = ""
     SetSaveState False
     
     If Not CreateGLWindow(Me, 640, 480, 16) Then End    ' 24 ?
 
-    LoadLayoutNew
+    LoadLayout
     LoadFont
-    
-    'Dim tempdata() As GLbyte
-    'ReDim tempdata(3, 2047, 2047)
-    'glGenTextures 1, RenderTex
-    'glBindTexture glTexture2D, RenderTex
-    'glTexImage2D glTexture2D, 0, 4, 2048, 2048, 0, tiRGBA, GL_UNSIGNED_BYTE, tempdata(0, 0, 0)
-    'glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR
-    'glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR
-    'Erase tempdata
+    LoadPin
     
     ' DEBUG ONLY !!!
     Dim dbgload As String
@@ -228,20 +244,42 @@ Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y A
     PrevNav_Y = Nav_Y
     Drag_X = X
     Drag_Y = Y
-    Form1.MousePointer = vbSizeAll
+    MainFrm.MousePointer = vbSizeAll
 End Sub
 
 Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dim c As Integer
+    Dim PopupFlag As Boolean
+    
     If Dragging = True Then
         Nav_X = PrevNav_X - (Drag_X - X)
         Nav_Y = PrevNav_Y - (Drag_Y - Y)
         Display
+    Else
+        PopupFlag = False
+        For c = 0 To nPins - 1
+            If (X > PinList(c).X + Nav_X) And _
+                (X < PinList(c).X + 20 + Nav_X) And _
+                (Y > PinList(c).Y + Nav_Y) And _
+                (Y < PinList(c).Y + 20 + Nav_Y) Then
+                If PinList(c).Show = False Then
+                    PopupFlag = True
+                    PinList(c).Show = True
+                End If
+            Else
+                If PinList(c).Show = True Then
+                    PopupFlag = True
+                    PinList(c).Show = False
+                End If
+            End If
+        Next c
+        If PopupFlag = True Then Redraw
     End If
 End Sub
 
 Private Sub Form_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
     Dragging = False
-    Form1.MousePointer = vbDefault
+    MainFrm.MousePointer = vbCrosshair
 End Sub
 
 Private Sub Form_Paint()
@@ -268,13 +306,20 @@ Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
         Done = True
     End If
     
-    If Done = False Then Cancel = 1
+    If Done = True Then
+        SettingsFrm.Hide
+        End
+    Else
+        Cancel = 1
+    End If
 End Sub
 
 Private Sub Form_Resize()
     ReSizeGLScene ScaleWidth, ScaleHeight
-    Text1.Top = Form1.ScaleHeight - Text1.Height - 8
-    Text1.Width = Form1.ScaleWidth - 16
+    If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
+        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 8
+        Text1.Width = MainFrm.ScaleWidth - 16
+    End If
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
@@ -355,6 +400,10 @@ Private Sub menu_saveas_Click()
     SaveFile True
 End Sub
 
+Private Sub menu_settings_Click()
+    SettingsFrm.Show
+End Sub
+
 Private Sub Text1_Change()
     SetSaveState False
 End Sub
@@ -380,7 +429,7 @@ Sub SetFormTitle()
     
     title = title & " - Waimea " & App.Major & "." & App.Minor
     
-    Form1.Caption = title
+    MainFrm.Caption = title
 End Sub
 
 Private Sub Text1_KeyDown(KeyCode As Integer, Shift As Integer)
