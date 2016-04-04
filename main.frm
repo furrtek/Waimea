@@ -205,6 +205,8 @@ Sub LoadLayout()
 End Sub
 
 Private Sub Form_Load()
+    On Error GoTo skipdebug
+    
     Dim ln As String
     
     XMargin = 64
@@ -222,9 +224,8 @@ Private Sub Form_Load()
     LoadFont
     LoadPin
     
-    ' DEBUG ONLY !!!
+    ' FOR DEBUG ONLY !
     Dim dbgload As String
-    
     FilePath = App.Path & "\waveform.txt"
     Open "waveform.txt" For Input As #1
         dbgload = ""
@@ -236,6 +237,11 @@ Private Sub Form_Load()
         DoEvents
         SetSaveState True
     Close #1
+
+    Exit Sub
+
+skipdebug:
+    If Err.Number <> 53 Then MsgBox "Error in load.", vbCritical
 End Sub
 
 Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
