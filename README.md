@@ -22,7 +22,7 @@ Also: No install, no registry keys.
 * Drag-scroll for large chronograms
 * Rulers
 * Modifiable layout/appearence (not as flexible as Wavedrom)
-* To come: Popup notes
+* Popup notes (pins)
 * To come: Export to image (and svg ?)
 
 # Syntax
@@ -46,6 +46,7 @@ A wave definition starts with `wave:`:
 
 Text for data zones starts with `data:` and strings (with no spaces) separated by commas.
 A vertical ruler can be set with `ruler:`, a x position, and a color index.
+A note can be added with `pin:`, a x position, a color index, and a string.
 
 # Layout.txt format
 
