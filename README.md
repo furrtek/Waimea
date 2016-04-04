@@ -7,9 +7,11 @@ Why VB6 ?
 * Super fast dev cycle for GUI apps
 * Small executables
 * No framework, only requires a 1.3MB dll (msvbvm60.dll)
+* Rather slow execution, but here we only need fast drawing
 * Been using it for 15 years
 * Can't be worse than Java
 * I believe that a web browser is a program to browse the web, not an application host
+* Not portable but should run in Wine :(
 
 # Syntax
 
