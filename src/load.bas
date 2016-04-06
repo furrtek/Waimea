@@ -9,6 +9,7 @@ Sub LoadSettings()
     LiveRefresh = True
     AltBubbles = True
     OpenLast = True
+    GroupAlpha = 15
     
     fn = App.Path & "\settings.ini"
     
@@ -24,6 +25,7 @@ Sub LoadSettings()
                     If Setting(0) = "altbubbles" Then AltBubbles = S2B(Setting(1))
                     If Setting(0) = "openlast" Then OpenLast = S2B(Setting(1))
                     If Setting(0) = "lastopened" Then LastOpened = Setting(1)
+                    If Setting(0) = "groupalpha" Then GroupAlpha = Val(Setting(1))
                 End If
             Loop While Not EOF(1)
         Close #1
@@ -47,6 +49,8 @@ Sub SaveSettings()
         ln = "openlast=" & B2S(OpenLast)
         Print #1, ln
         ln = "lastopened=" & FilePath
+        Print #1, ln
+        ln = "groupalpha=" & GroupAlpha
         Print #1, ln
     Close #1
 End Sub

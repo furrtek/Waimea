@@ -2,7 +2,7 @@ VERSION 5.00
 Begin VB.Form SettingsFrm 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "Settings"
-   ClientHeight    =   2355
+   ClientHeight    =   2790
    ClientLeft      =   45
    ClientTop       =   330
    ClientWidth     =   4680
@@ -10,15 +10,26 @@ Begin VB.Form SettingsFrm
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   2355
+   ScaleHeight     =   2790
    ScaleWidth      =   4680
    StartUpPosition =   2  'CenterScreen
+   Begin VB.HScrollBar HScroll2 
+      Height          =   255
+      LargeChange     =   10
+      Left            =   120
+      Max             =   127
+      Min             =   5
+      TabIndex        =   7
+      Top             =   960
+      Value           =   5
+      Width           =   4455
+   End
    Begin VB.CheckBox Check3 
       Caption         =   "Load last opened file"
       Height          =   255
       Left            =   120
       TabIndex        =   6
-      Top             =   1320
+      Top             =   1800
       Width           =   1935
    End
    Begin VB.CheckBox Check2 
@@ -26,7 +37,7 @@ Begin VB.Form SettingsFrm
       Height          =   255
       Left            =   120
       TabIndex        =   5
-      Top             =   1080
+      Top             =   1560
       Width           =   1935
    End
    Begin VB.CommandButton Command2 
@@ -34,7 +45,7 @@ Begin VB.Form SettingsFrm
       Height          =   495
       Left            =   1680
       TabIndex        =   1
-      Top             =   1680
+      Top             =   2160
       Width           =   1335
    End
    Begin VB.CommandButton Command1 
@@ -42,7 +53,7 @@ Begin VB.Form SettingsFrm
       Height          =   495
       Left            =   3120
       TabIndex        =   0
-      Top             =   1680
+      Top             =   2160
       Width           =   1335
    End
    Begin VB.CheckBox Check1 
@@ -50,7 +61,7 @@ Begin VB.Form SettingsFrm
       Height          =   255
       Left            =   120
       TabIndex        =   3
-      Top             =   840
+      Top             =   1320
       Width           =   1215
    End
    Begin VB.HScrollBar HScroll1 
@@ -63,6 +74,14 @@ Begin VB.Form SettingsFrm
       Top             =   360
       Value           =   1
       Width           =   4455
+   End
+   Begin VB.Label Label2 
+      Caption         =   "Groups opacity:"
+      Height          =   255
+      Left            =   120
+      TabIndex        =   8
+      Top             =   720
+      Width           =   1455
    End
    Begin VB.Label Label1 
       Caption         =   "Scaling:"
@@ -79,8 +98,13 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Dim LocalSpacing As Single
+Dim LocalGroupAlpha As Integer
 
 Private Sub Command1_Click()
+    Dim NeedRefresh As Boolean
+    
+    NeedRefresh = False
+    
     LiveRefresh = C2B(Check1.Value)
     AltBubbles = C2B(Check2.Value)
     OpenLast = C2B(Check3.Value)
@@ -88,8 +112,15 @@ Private Sub Command1_Click()
     If LocalSpacing <> Spacing Then
         Spacing = LocalSpacing
         RenderTicks
-        Redraw
+        NeedRefresh = True
     End If
+    
+    If LocalGroupAlpha <> GroupAlpha Then
+        GroupAlpha = LocalGroupAlpha
+        NeedRefresh = True
+    End If
+    
+    If NeedRefresh = True Then Redraw
     
     SaveSettings
     
@@ -106,11 +137,18 @@ Private Sub Form_Load()
     Check3.Value = B2C(OpenLast)
     
     LocalSpacing = Spacing
+    LocalGroupAlpha = GroupAlpha
     
     HScroll1.Value = LocalSpacing * 10
+    HScroll2.Value = LocalGroupAlpha
 End Sub
 
 Private Sub HScroll1_Change()
     LocalSpacing = HScroll1.Value / 10
     Label1.Caption = "Scaling: " & LocalSpacing
+End Sub
+
+Private Sub HScroll2_Change()
+    LocalGroupAlpha = HScroll2.Value
+    Label2.Caption = "Groups opacity: " & LocalGroupAlpha
 End Sub

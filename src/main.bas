@@ -33,6 +33,11 @@ Private Type TWave
     Used As Boolean
 End Type
 
+Private Type TRuler
+    X As Integer
+    Color As Integer
+End Type
+
 Public FSO As FileSystemObject
 
 Public Loaded As Boolean
@@ -42,11 +47,13 @@ Public PinTex As GLuint
 
 Public PinList(255) As TPin
 Public GroupStack(256) As TGroup
+Public Rulers(256) As TRuler
 
 Public UsedWave As Boolean
 
 Public nPins As Integer
 Public nGroups As Integer
+Public nRulers As Integer
 Public GIdx As Integer
 
 ' Settings
@@ -54,6 +61,7 @@ Public Spacing As Single
 Public LiveRefresh As Boolean
 Public AltBubbles As Boolean
 Public OpenLast As Boolean
+Public GroupAlpha As Integer
 
 Public LastOpened As String
 
@@ -111,19 +119,41 @@ Public Sub Display()
     glPushMatrix
     
     ' Draw groups
-    For w = 0 To nGroups
-        SetDataColor GroupStack(w).Color, 15
+    For w = 0 To nGroups - 1
+        ' Shapes
+        SetDataColor GroupStack(w).Color, GroupAlpha
         glBegin bmPolygon
             glVertex2f 0, GroupStack(w).Start
             glVertex2f MainFrm.ScaleWidth, GroupStack(w).Start
             glVertex2f MainFrm.ScaleWidth, GroupStack(w).Stop
             glVertex2f 0, GroupStack(w).Stop
         glEnd
+        
+        ' Text
+        SetDataColor GroupStack(w).Color, 127
+        glPopMatrix
+        glPushMatrix
+        glTranslatef 0, ((GroupStack(w).Stop + GroupStack(w).Start) / 2) + ((Len(GroupStack(w).Txt) * 7) / 2), 0
+        glRotatef -90, 0, 0, 1
+        RenderText GroupStack(w).Txt, 2, 0, 0.8
     Next w
     
     ' Draw waves
+    glPopMatrix
+    glPushMatrix
     For w = 0 To nWaves - 1
         If Waves(w).Used = True Then glCallList Waves(w).DL
+    Next w
+    
+    ' Draw rulers
+    glPopMatrix
+    glPushMatrix
+    For w = 0 To nRulers - 1
+        SetDataColor Rulers(w).Color, 63
+        glBegin bmLines
+            glVertex2d Rulers(w).X, 0
+            glVertex2d Rulers(w).X, MainFrm.ScaleHeight
+        glEnd
     Next w
     
     ' Draw pins
@@ -165,7 +195,7 @@ Public Sub Display()
                 glVertex2f 0, 0
             glEnd
             SetDataColor PinList(w).Color, 127
-            RenderText PinList(w).Txt, 12, -8
+            RenderText PinList(w).Txt, 12, -8, 1
         End If
     Next w
     
@@ -231,10 +261,12 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
     ElseIf FieldType = "group" Then
         GroupStack(GIdx).Start = (w * 20) - 4
         DF = Split(FieldData, ",")
-        GroupStack(GIdx).Txt = DF(0)
-        GroupStack(GIdx).Color = Val(DF(1))
-        If GIdx > nGroups Then nGroups = GIdx
-        GIdx = GIdx + 1
+        If UBound(DF) >= 1 Then
+            GroupStack(GIdx).Txt = DF(0)
+            GroupStack(GIdx).Color = Val(DF(1))
+            GIdx = GIdx + 1
+            If GIdx > nGroups Then nGroups = GIdx
+        End If
     ElseIf FieldType = "groupend" Then
         If GIdx > 0 Then
             GIdx = GIdx - 1
@@ -337,7 +369,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
                 If (DataTxt(0) <> "") Then
                     If dti <= UBound(DataTxt) Then
                         SetDataColor DataColor, 127
-                        RenderText DataTxt(dti), -(((XDraw - DStart) / 2) + (Len(DataTxt(dti)) * 4)) + 7, 0
+                        RenderText DataTxt(dti), -(((XDraw - DStart) / 2) + (Len(DataTxt(dti)) * 4)) + 7, 0, 1
                         dti = dti + 1
                     End If
                 End If

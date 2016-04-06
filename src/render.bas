@@ -31,7 +31,8 @@ Public Sub Render()
     Lines = Split(WaveDef, vbCrLf)
     nPins = 0
     nWaves = 0
-    nGroups = 0
+    nRulers = -1
+    nGroups = -1
     GIdx = 0
     For w = 0 To UBound(Lines)
         ReDim DataTxt(1)
@@ -76,13 +77,9 @@ Sub RenderRuler(FieldData As String)
     
     DF = Split(FieldData, ",")
     If UBound(DF) = 1 Then
-        glPopMatrix
-        glPushMatrix
-        SetDataColor Val(DF(1)), 63
-        glBegin bmLines
-            glVertex2d Val(DF(0)) * 15 + XMargin, 0
-            glVertex2d Val(DF(0)) * 15 + XMargin, MainFrm.ScaleHeight
-        glEnd
+        nRulers = nRulers + 1
+        Rulers(nRulers).X = Val(DF(0)) * 15 + XMargin
+        Rulers(nRulers).Color = Val(DF(1))
     End If
 End Sub
 
@@ -115,10 +112,10 @@ End Sub
 
 Sub RenderName(FieldData As String)
     glColor4b 0, 0, 0, 127
-    RenderText FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0
+    RenderText FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0, 1
 End Sub
 
-Sub RenderText(Txt As String, xofs As Integer, yofs As Integer)
+Sub RenderText(Txt As String, Xofs As Integer, YOfs As Integer, Coef As Single)
     Dim pch As Integer
     Dim sx, sy, ex, ey As Single
     Dim c As Integer
@@ -129,7 +126,8 @@ Sub RenderText(Txt As String, xofs As Integer, yofs As Integer)
     glEnable glcTexture2D
     glBindTexture glTexture2D, FontTex
     
-    glTranslatef xofs, yofs, 0
+    glTranslatef Xofs, YOfs, 0
+    glScalef Coef, Coef, 1
     
     For c = 0 To Len(Txt) - 1
         pch = Asc(Mid(Txt, c + 1, 1)) - 32
