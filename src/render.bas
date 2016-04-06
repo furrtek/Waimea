@@ -1,5 +1,4 @@
 Attribute VB_Name = "RenderMd"
-
 Sub RenderTicks()
     Dim c As Integer
     Dim XPos As Single
@@ -55,6 +54,7 @@ Public Sub Render()
                 ProcessFields Fields, "pin", nWaves
                 If UsedWave = True Then
                     Waves(nWaves).Used = True
+                    Waves(nWaves).Name = WaveName
                     nWaves = nWaves + 1
                     glTranslatef 0#, 20#, 0#    ' Next line
                 End If
@@ -113,6 +113,7 @@ End Sub
 Sub RenderName(FieldData As String)
     SetGLColor Color_Names
     RenderText FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0, 1
+    WaveName = FieldData
 End Sub
 
 Sub RenderText(Txt As String, Xofs As Integer, YOfs As Integer, Coef As Single)

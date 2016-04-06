@@ -23,8 +23,8 @@ Begin VB.Form MainFrm
    Begin VB.TextBox Text1 
       BorderStyle     =   0  'None
       BeginProperty Font 
-         Name            =   "Bitstream Vera Sans Mono"
-         Size            =   9.75
+         Name            =   "Fixedsys"
+         Size            =   9
          Charset         =   0
          Weight          =   400
          Underline       =   0   'False
@@ -69,6 +69,12 @@ Begin VB.Form MainFrm
    End
    Begin VB.Menu menu_tools 
       Caption         =   "Tools"
+      Begin VB.Menu menu_extend 
+         Caption         =   "Extend waves (beta)"
+      End
+      Begin VB.Menu menu_sep2 
+         Caption         =   "-"
+      End
       Begin VB.Menu menu_settings 
          Caption         =   "Settings"
       End
@@ -191,6 +197,7 @@ End Sub
 
 Private Sub Image1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
     If Button = 1 Then
+        SavePicture MainFrm.Image, "d:\gltest.bmp"
         Dragging = True
         PrevNav_X = Nav_X
         PrevNav_Y = Nav_Y
@@ -247,7 +254,11 @@ Private Sub menu_about_Click()
 End Sub
 
 Private Sub menu_export_Click()
-    MsgBox "Not implemented yet"
+    MsgBox "Not implemented yet", vbInformation
+End Sub
+
+Private Sub menu_extend_Click()
+    If nWaves > 0 Then ExtendFrm.Show 1
 End Sub
 
 Private Sub menu_open_Click()
@@ -333,7 +344,7 @@ End Sub
 Private Sub Text1_KeyDown(KeyCode As Integer, Shift As Integer)
     Dim w As Integer
 
-    If KeyCode = 18 And Keys(18) = False Then   ' Prevents Alt retrig
+    If KeyCode = 18 And Keys(18) = False And AltBubbles = True Then   ' Prevents Alt retrig
         ' Show all bubbles
         For w = 0 To nPins - 1
             PinList(w).Show = True

@@ -13,6 +13,14 @@ Begin VB.Form SettingsFrm
    ScaleHeight     =   2790
    ScaleWidth      =   4680
    StartUpPosition =   2  'CenterScreen
+   Begin VB.CheckBox Check4 
+      Caption         =   "Anti-aliasing"
+      Height          =   255
+      Left            =   2760
+      TabIndex        =   10
+      Top             =   1680
+      Width           =   1335
+   End
    Begin VB.ComboBox Combo1 
       Height          =   315
       ItemData        =   "settings.frx":0E42
@@ -109,15 +117,17 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Dim LocalSpacing As Single
 Dim LocalGroupAlpha As Integer
+Dim NeedRefresh As Boolean
+
+Private Sub Check4_Click()
+    NeedRefresh = True
+End Sub
 
 Private Sub Command1_Click()
-    Dim NeedRefresh As Boolean
-    
-    NeedRefresh = False
-    
     LiveRefresh = C2B(Check1.Value)
     AltBubbles = C2B(Check2.Value)
     OpenLast = C2B(Check3.Value)
+    AntiAliasing = C2B(Check4.Value)
     
     If (Combo1.ListIndex <> ColorScheme) And Combo1.ListIndex >= 0 Then
         ColorScheme = Combo1.ListIndex
@@ -147,10 +157,13 @@ Private Sub Command2_Click()
     Me.Hide
 End Sub
 
-Private Sub Form_Load()
+Private Sub Form_Activate()
+    NeedRefresh = False
+    
     Check1.Value = B2C(LiveRefresh)
     Check2.Value = B2C(AltBubbles)
     Check3.Value = B2C(OpenLast)
+    Check4.Value = B2C(AntiAliasing)
     
     LocalSpacing = Spacing
     LocalGroupAlpha = GroupAlpha

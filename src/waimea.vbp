@@ -11,6 +11,7 @@ Module=RenderMd; render.bas
 Module=GLMd; gl.bas
 Module=LoadMd; load.bas
 Module=SettingsMd; settings.bas
+Form=extend.frm
 IconForm="MainFrm"
 Startup="MainFrm"
 HelpFile=""

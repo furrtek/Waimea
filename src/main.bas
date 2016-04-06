@@ -38,6 +38,7 @@ End Type
 Private Type TWave
     DL As GLuint
     Used As Boolean
+    Name As String
 End Type
 
 Private Type TRuler
@@ -63,6 +64,8 @@ Public nGroups As Integer
 Public nRulers As Integer
 Public GIdx As Integer
 
+Public WaveName As String
+
 ' Settings
 Public Spacing As Single
 Public LiveRefresh As Boolean
@@ -70,6 +73,7 @@ Public AltBubbles As Boolean
 Public OpenLast As Boolean
 Public GroupAlpha As Integer
 Public ColorScheme As Integer
+Public AntiAliasing As Boolean
 
 Public Color_Background As TGLByteColor
 Public Color_Ticks As TGLByteColor
@@ -116,8 +120,13 @@ Public Sub Display()
     glClearColor Color_Background.Red / 127, Color_Background.Green / 127, Color_Background.Blue / 127, 1
     glClear clrColorBufferBit Or clrDepthBufferBit
     
+    If AntiAliasing = True Then
+        glEnable glcLineSmooth
+    Else
+        glDisable glcLineSmooth
+    End If
+    
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
-    glHint GL_LINE_SMOOTH_HINT, GL_NICEST
     
     glTranslatef Nav_X, Nav_Y, 0#
     glScalef Spacing, 1, 1

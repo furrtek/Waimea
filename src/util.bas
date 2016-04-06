@@ -65,7 +65,7 @@ Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     ElseIf DataColor = 7 Then
         glColor4b 100, 100, 100, Alpha  ' Grey
     Else
-        SetGLColor Color_Waves
+        glColor4b 63, 63, 63, Alpha  ' Grey (neutral)
     End If
 End Sub
 

@@ -11,6 +11,7 @@ Sub LoadSettings()
     OpenLast = True
     GroupAlpha = 31
     ColorScheme = 0     ' "Default"
+    AntiAliasing = True
     
     fn = App.Path & "\settings.ini"
     
@@ -29,6 +30,7 @@ Sub LoadSettings()
                     If Setting(0) = "lastopened" Then LastOpened = Setting(1)
                     If Setting(0) = "groupalpha" Then GroupAlpha = Val(Setting(1))
                     If Setting(0) = "colorscheme" Then ColorScheme = Val(Setting(1))
+                    If Setting(0) = "antialiasing" Then AntiAliasing = S2B(Setting(1))
                 End If
             Loop While Not EOF(1)
         Close #1
@@ -58,6 +60,8 @@ Sub SaveSettings()
         ln = "groupalpha=" & GroupAlpha
         Print #1, ln
         ln = "colorscheme=" & ColorScheme
+        Print #1, ln
+        ln = "antialiasing=" & B2S(AntiAliasing)
         Print #1, ln
     Close #1
 End Sub

@@ -18,15 +18,9 @@ End Sub
 
 Public Sub InitGL()
     glLineWidth 1
-
     glShadeModel smSmooth
-
     glClearDepth 1#
-    
-    ' Todo: Option for antialias
     glHint htLineSmoothHint, hmNicest
-    glEnable glcLineSmooth
-    
     glEnable glcBlend
 End Sub
 
