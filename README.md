@@ -1,5 +1,5 @@
 # Waimea
-Compact chronogram editor for Windows using OpenGL, written in good ol' VB6.
+Compact standalone chronogram editor for Windows using OpenGL, written in good ol' VB6. Inspired by [Wavedrom](https://github.com/drom/wavedrom/).
 
 ![Waimea screenshot](screenshot3.png)
 
@@ -17,7 +17,7 @@ Also: No install, no registry keys.
 
 # Features
 
-* Markdown syntax very similar to [Wavedrom](https://github.com/drom/wavedrom/)'s
+* Markdown syntax very similar to Wavedrom's
 * Fast and clean OpenGL rendering
 * Drag-scroll for large chronograms
 * Rulers
@@ -27,7 +27,7 @@ Also: No install, no registry keys.
 
 ## Usage ##
 
-* Holding Alt shows all popup notes
+* Holding Alt shows all popup notes (if enabled)
 * Right click reset view to origin
 
 # Syntax
@@ -49,9 +49,10 @@ A wave definition starts with `wave:`:
 * `=` : Data (grey)
 * `0~5` : Data (colored)
 
-Text for data zones starts with `data:` and strings (with no spaces) separated by commas.
+Text for data zones starts with `data:` and strings separated by commas.
 A vertical ruler can be set with `ruler:`, a x position, and a color index.
 A note can be added with `pin:`, a x position, a color index, and a string.
+A wave group is started with `group:`, a string, and a color index. A group is ended with `groupend`. Groups can be nested.
 
 # Layout.txt format
 
@@ -70,8 +71,5 @@ For example, drawing a filled square clockwise: `SH 0,0:16,0:16,16:0,16`
 
 # known bugs
 
-* No checking of layout.txt and texture files (TGAs) presence, will crash if not.
 * Might crash on badly formatted layout.txt file.
-* Live refresh setting doesn't do anything.
-* Settings not saved before exit.
 * Drag-scroll not well optimized, can be slow on some setups. Will have to draw in a buffer and scroll the buffer instead of redrawing everything each time.
