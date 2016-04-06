@@ -4,7 +4,7 @@ Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
     If Height = 0 Then Height = 1
     If Width = 0 Then Width = 1
     
-    glViewport 0, 150, Width, Height - 150
+    glViewport 0, 152, Width, Height - 152
     glMatrixMode mmProjection
     glLoadIdentity
 
@@ -17,17 +17,17 @@ Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
 End Sub
 
 Public Sub InitGL()
-    glShadeModel smFlat
-
     glLineWidth 1
 
-    glShadeModel GL_SMOOTH
+    glShadeModel smSmooth
 
     glClearDepth 1#
-    glHint GL_LINE_SMOOTH_HINT, GL_NICEST
-    glEnable GL_LINE_SMOOTH
     
-    glEnable GL_BLEND
+    ' Todo: Option for antialias
+    glHint htLineSmoothHint, hmNicest
+    glEnable glcLineSmooth
+    
+    glEnable glcBlend
 End Sub
 
 Public Sub KillGLWindow()

@@ -2,15 +2,15 @@ VERSION 5.00
 Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
 Begin VB.Form MainFrm 
    Caption         =   "Waimea"
-   ClientHeight    =   6825
+   ClientHeight    =   5310
    ClientLeft      =   60
    ClientTop       =   630
-   ClientWidth     =   14175
+   ClientWidth     =   11880
    Icon            =   "main.frx":0000
    LinkTopic       =   "Form1"
-   ScaleHeight     =   455
+   ScaleHeight     =   354
    ScaleMode       =   3  'Pixel
-   ScaleWidth      =   945
+   ScaleWidth      =   792
    StartUpPosition =   2  'CenterScreen
    Begin MSComDlg.CommonDialog CommonDialog1 
       Left            =   120
@@ -36,15 +36,15 @@ Begin VB.Form MainFrm
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
       TabIndex        =   0
-      Top             =   4560
-      Width           =   14055
+      Top             =   3000
+      Width           =   11775
    End
    Begin VB.Image Image1 
-      Height          =   4455
+      Height          =   2895
       Left            =   0
       MousePointer    =   2  'Cross
       Top             =   0
-      Width           =   14175
+      Width           =   11850
    End
    Begin VB.Menu menu_sheet 
       Caption         =   "Sheet"
@@ -178,8 +178,8 @@ End Sub
 Private Sub Form_Resize()
     ReSizeGLScene ScaleWidth, ScaleHeight
     If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
-        Text1.Top = MainFrm.ScaleHeight - Text1.Height
-        Text1.Width = MainFrm.ScaleWidth - 4
+        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 4
+        Text1.Width = MainFrm.ScaleWidth - 8
         Image1.Width = MainFrm.ScaleWidth
         Image1.Height = MainFrm.ScaleHeight - Text1.Height - 8
     End If
@@ -260,7 +260,7 @@ Private Sub menu_open_Click()
         If Confirm = False Then Exit Sub
     End If
     
-    fn = CommonDialog1.filename
+    fn = CommonDialog1.FileName
     
     If FSO.FileExists(fn) = True Then LoadWaveDef fn
 End Sub
@@ -279,14 +279,14 @@ Sub SaveFile(Force As Boolean)
         CommonDialog1.DialogTitle = "Save waveform file"
         CommonDialog1.ShowSave
     Else
-        CommonDialog1.filename = FilePath
+        CommonDialog1.FileName = FilePath
     End If
     
-    fn = CommonDialog1.filename
+    fn = CommonDialog1.FileName
     
     If FSO.FileExists(fn) = True Then
         ln = Text1.Text
-        Open CommonDialog1.filename For Output As #1
+        Open CommonDialog1.FileName For Output As #1
             If Len(ln) >= 2 Then
                 If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
             End If

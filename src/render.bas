@@ -31,8 +31,8 @@ Public Sub Render()
     Lines = Split(WaveDef, vbCrLf)
     nPins = 0
     nWaves = 0
-    nRulers = -1
-    nGroups = -1
+    nRulers = 0
+    nGroups = 0
     GIdx = 0
     For w = 0 To UBound(Lines)
         ReDim DataTxt(1)
@@ -77,9 +77,9 @@ Sub RenderRuler(FieldData As String)
     
     DF = Split(FieldData, ",")
     If UBound(DF) = 1 Then
-        nRulers = nRulers + 1
         Rulers(nRulers).X = Val(DF(0)) * 15 + XMargin
         Rulers(nRulers).Color = Val(DF(1))
+        nRulers = nRulers + 1
     End If
 End Sub
 
@@ -111,7 +111,7 @@ Sub RenderPin(FieldData As String, YPos As Integer)
 End Sub
 
 Sub RenderName(FieldData As String)
-    glColor4b 0, 0, 0, 127
+    SetGLColor Color_Names
     RenderText FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0, 1
 End Sub
 

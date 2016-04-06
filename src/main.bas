@@ -1,6 +1,13 @@
 Attribute VB_Name = "MainMd"
 Option Explicit
 
+Public Type TGLByteColor
+    Red As Byte
+    Green As Byte
+    Blue As Byte
+    Alpha As Byte
+End Type
+
 Private Type DCoord
     X As Integer
     Y As Integer
@@ -62,6 +69,12 @@ Public LiveRefresh As Boolean
 Public AltBubbles As Boolean
 Public OpenLast As Boolean
 Public GroupAlpha As Integer
+Public ColorScheme As Integer
+
+Public Color_Background As TGLByteColor
+Public Color_Ticks As TGLByteColor
+Public Color_Waves As TGLByteColor
+Public Color_Names As TGLByteColor
 
 Public LastOpened As String
 
@@ -100,7 +113,7 @@ Public Sub Display()
     glMatrixMode mmModelView        ' Select The Modelview Matrix
     glLoadIdentity                  ' Reset The Modelview Matrix
     
-    glClearColor 1, 1, 1, 1
+    glClearColor Color_Background.Red / 127, Color_Background.Green / 127, Color_Background.Blue / 127, 1
     glClear clrColorBufferBit Or clrDepthBufferBit
     
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
@@ -111,7 +124,7 @@ Public Sub Display()
     glPushMatrix
     
     ' Draw ticks
-    glColor4b 0, 0, 0, 31
+    SetGLColor Color_Ticks
     glCallList TicksDL
     
     glPopMatrix
@@ -345,7 +358,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
                 Loop
             End If
             
-            glColor4b 0, 0, 0, 127
+            SetGLColor Color_Waves
             
             ' Transition
             If c > 0 Then

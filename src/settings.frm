@@ -13,6 +13,16 @@ Begin VB.Form SettingsFrm
    ScaleHeight     =   2790
    ScaleWidth      =   4680
    StartUpPosition =   2  'CenterScreen
+   Begin VB.ComboBox Combo1 
+      Height          =   315
+      ItemData        =   "settings.frx":0E42
+      Left            =   2760
+      List            =   "settings.frx":0E4C
+      TabIndex        =   9
+      Text            =   "Color scheme"
+      Top             =   1320
+      Width           =   1815
+   End
    Begin VB.HScrollBar HScroll2 
       Height          =   255
       LargeChange     =   10
@@ -109,6 +119,12 @@ Private Sub Command1_Click()
     AltBubbles = C2B(Check2.Value)
     OpenLast = C2B(Check3.Value)
     
+    If (Combo1.ListIndex <> ColorScheme) And Combo1.ListIndex >= 0 Then
+        ColorScheme = Combo1.ListIndex
+        LoadColorScheme
+        NeedRefresh = True
+    End If
+    
     If LocalSpacing <> Spacing Then
         Spacing = LocalSpacing
         RenderTicks
@@ -138,6 +154,8 @@ Private Sub Form_Load()
     
     LocalSpacing = Spacing
     LocalGroupAlpha = GroupAlpha
+    
+    Combo1.ListIndex = ColorScheme
     
     HScroll1.Value = LocalSpacing * 10
     HScroll2.Value = LocalGroupAlpha

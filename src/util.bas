@@ -1,4 +1,31 @@
 Attribute VB_Name = "UtilMd"
+Sub SetGLColor(Color As TGLByteColor)
+    glColor4b Color.Red, Color.Green, Color.Blue, Color.Alpha
+End Sub
+
+Sub InitColor(Color As TGLByteColor, Red As Byte, Green As Byte, Blue As Byte, Alpha As Byte)
+    Color.Red = Red
+    Color.Green = Green
+    Color.Blue = Blue
+    Color.Alpha = Alpha
+End Sub
+
+Sub LoadColorScheme()
+    If ColorScheme = 0 Then
+        ' Default
+        InitColor Color_Ticks, 0, 0, 0, 31
+        InitColor Color_Names, 0, 0, 0, 127
+        InitColor Color_Waves, 0, 0, 0, 127
+        InitColor Color_Background, 127, 127, 127, 127
+    ElseIf ColorScheme = 1 Then
+        ' Inverted
+        InitColor Color_Ticks, 127, 127, 127, 31
+        InitColor Color_Names, 127, 127, 127, 127
+        InitColor Color_Waves, 127, 127, 127, 127
+        InitColor Color_Background, 0, 0, 0, 127
+    End If
+End Sub
+
 Sub Redraw()
     Render
     Display
@@ -22,7 +49,7 @@ End Function
 
 Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     If DataColor = 0 Then
-        glColor4b 0, 0, 0, Alpha    ' Black
+        SetGLColor Color_Waves
     ElseIf DataColor = 1 Then
         glColor4b 127, 0, 0, Alpha  ' Red
     ElseIf DataColor = 2 Then
@@ -38,7 +65,7 @@ Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     ElseIf DataColor = 7 Then
         glColor4b 100, 100, 100, Alpha  ' Grey
     Else
-        glColor4b 0, 0, 0, Alpha    ' Default
+        SetGLColor Color_Waves
     End If
 End Sub
 
