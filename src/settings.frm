@@ -73,7 +73,7 @@ Private Sub Command1_Click()
     If LocalSpacing <> Spacing Then
         Spacing = LocalSpacing
         RenderTicks
-        MainFrm.Redraw
+        Redraw
     End If
     Me.Hide
 End Sub

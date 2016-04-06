@@ -7,7 +7,7 @@ Public Sub LoadFont()
     
     ReDim FontData(3, 511, 255)
     
-    Open "font.tga" For Binary As #1
+    Open App.Path & "\font.tga" For Binary As #1
         Seek #1, 19
         Get #1, , FontData
     Close #1
@@ -28,7 +28,7 @@ Public Sub LoadPin()
     
     ReDim PinData(3, 63, 63)
     
-    Open "pin.tga" For Binary As #1
+    Open App.Path & "\pin.tga" For Binary As #1
         Seek #1, 19
         Get #1, , PinData
     Close #1
@@ -95,7 +95,7 @@ Sub LoadLayout()
     Next c
     
     lidx = -1
-    Open "layout.txt" For Input As #1
+    Open App.Path & "\layout.txt" For Input As #1
         Do
             Line Input #1, lline
             If lline <> "" Then

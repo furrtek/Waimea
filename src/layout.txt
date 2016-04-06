@@ -23,26 +23,26 @@ L 0,15:15,15
 EP 15,15
 
 DEF n		Clock negative
-SP 0,0
-LS 0,0:7,0:7,15:15,15
-EP 15,15
-
-DEF p		Clock positive
 SP 0,15
 LS 0,15:7,15:7,0:15,0
 EP 15,0
 
-DEF N		Clock negative with arrow
+DEF p		Clock positive
 SP 0,0
 LS 0,0:7,0:7,15:15,15
-LS 4,6:7,9:10,6
 EP 15,15
 
-DEF P		Clock positive with arrow
+DEF N		Clock negative with arrow
 SP 0,15
 LS 0,15:7,15:7,0:15,0
 LS 4,8:7,5:10,8
 EP 15,0
+
+DEF P		Clock positive with arrow
+SP 0,0
+LS 0,0:7,0:7,15:15,15
+LS 4,6:7,9:10,6
+EP 15,15
 
 DEF L		Falling with arrow
 SP 0,0

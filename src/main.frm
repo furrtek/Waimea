@@ -2,13 +2,13 @@ VERSION 5.00
 Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
 Begin VB.Form MainFrm 
    Caption         =   "Waimea"
-   ClientHeight    =   6750
+   ClientHeight    =   6825
    ClientLeft      =   60
    ClientTop       =   630
    ClientWidth     =   14175
    Icon            =   "main.frx":0000
    LinkTopic       =   "Form1"
-   ScaleHeight     =   450
+   ScaleHeight     =   455
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   945
    StartUpPosition =   2  'CenterScreen
@@ -21,6 +21,7 @@ Begin VB.Form MainFrm
       Filter          =   "Text files|*.txt"
    End
    Begin VB.TextBox Text1 
+      BorderStyle     =   0  'None
       BeginProperty Font 
          Name            =   "Bitstream Vera Sans Mono"
          Size            =   9.75
@@ -30,13 +31,13 @@ Begin VB.Form MainFrm
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   2085
-      Left            =   120
+      Height          =   2205
+      Left            =   0
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
       TabIndex        =   0
       Top             =   4560
-      Width           =   13935
+      Width           =   14175
    End
    Begin VB.Image Image1 
       Height          =   4455
@@ -99,6 +100,7 @@ Private Sub Form_Load()
     Dim ln As String
     
     XMargin = 64
+    YMargin = 20
     Nav_X = 0
     Nav_Y = 0
     Spacing = 1
@@ -164,8 +166,8 @@ End Sub
 Private Sub Form_Resize()
     ReSizeGLScene ScaleWidth, ScaleHeight
     If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
-        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 8
-        Text1.Width = MainFrm.ScaleWidth - 16
+        Text1.Top = MainFrm.ScaleHeight - Text1.Height
+        Text1.Width = MainFrm.ScaleWidth
         Image1.Width = MainFrm.ScaleWidth
         Image1.Height = MainFrm.ScaleHeight - Text1.Height - 8
     End If
@@ -206,8 +208,8 @@ Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y
         For c = 0 To nPins - 1
             If (X > PinList(c).X - 10 + Nav_X) And _
                 (X < PinList(c).X + 10 + Nav_X) And _
-                (Y > PinList(c).Y + Nav_Y) And _
-                (Y < PinList(c).Y + 20 + Nav_Y) Then
+                (Y > PinList(c).Y + YMargin + Nav_Y) And _
+                (Y < PinList(c).Y + YMargin + 20 + Nav_Y) Then
                 If PinList(c).Show = False Then
                     PopupFlag = True
                     PinList(c).Show = True

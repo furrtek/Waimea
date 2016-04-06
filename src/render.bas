@@ -2,17 +2,17 @@ Attribute VB_Name = "RenderMd"
 
 Sub RenderTicks()
     Dim c As Integer
-    Dim xpos As Single
+    Dim XPos As Single
     
-    If glIsList(TicksDL) = 1 Then glDeleteLists TicksDL, 1
+    If glIsList(TicksDL) = GL_TRUE Then glDeleteLists TicksDL, 1
     TicksDL = glGenLists(1)
     glNewList TicksDL, GL_COMPILE
         glBegin bmLines
-            xpos = XMargin
-            While (xpos < MainFrm.ScaleWidth)
-                glVertex2d xpos, 0
-                glVertex2d xpos, MainFrm.ScaleHeight
-                xpos = xpos + 15
+            XPos = XMargin
+            While (XPos < MainFrm.ScaleWidth)
+                glVertex2d XPos, 0
+                glVertex2d XPos, MainFrm.ScaleHeight
+                XPos = XPos + 15
             Wend
         glEnd
     glEndList
@@ -20,35 +20,53 @@ End Sub
 
 Public Sub Render()
     Dim c As Integer
-    Dim xpos As Single
-    Dim d As Integer
-    Dim WaveDef As String
-    Dim waves() As String
-    Dim fields() As String
     Dim w As Integer
+    Dim WaveDef As String
+    Dim Lines() As String
+    Dim Fields() As String
 
     WaveDef = MainFrm.Text1.Text
     
     ' For each line...
-    waves = Split(WaveDef, vbCrLf)
-    nWaves = UBound(waves)
+    Lines = Split(WaveDef, vbCrLf)
     nPins = 0
-    For w = 0 To nWaves
+    nWaves = 0
+    nGroups = 0
+    GIdx = 0
+    For w = 0 To UBound(Lines)
         ReDim DataTxt(1)
         DataTxt(0) = ""
-        HasName = False
-        fields = Split(waves(w), ";")
-        If glIsList(WaveDL(w)) = 1 Then glDeleteLists WaveDL(w), 1
-        WaveDL(w) = glGenLists(1)
-        glNewList WaveDL(w), GL_COMPILE
-            ProcessFields fields, "name", w
-            ProcessFields fields, "data", w
-            ProcessFields fields, "wave", w
-            ProcessFields fields, "ruler", w
-            ProcessFields fields, "pin", w
-            glTranslatef 0#, 20#, 0#    ' Next line
-        glEndList
+        UsedWave = False
+        Fields = Split(Lines(w), ";")
+        If glIsList(Waves(w).DL) = GL_TRUE Then
+            glDeleteLists Waves(w).DL, 1
+        End If
+        If UBound(Fields) >= 0 Then
+            Waves(w).DL = glGenLists(1)
+            glNewList Waves(w).DL, GL_COMPILE   ' Parse priority is important here
+                ProcessFields Fields, "group", nWaves
+                ProcessFields Fields, "groupend", nWaves
+                ProcessFields Fields, "name", nWaves
+                ProcessFields Fields, "data", nWaves
+                ProcessFields Fields, "wave", nWaves
+                ProcessFields Fields, "ruler", nWaves
+                ProcessFields Fields, "pin", nWaves
+                If UsedWave = True Then
+                    Waves(nWaves).Used = True
+                    nWaves = nWaves + 1
+                    glTranslatef 0#, 20#, 0#    ' Next line
+                End If
+            glEndList
+        End If
     Next w
+    
+    ' Fix groups if needed
+    If GIdx > 0 Then
+        For c = GIdx - 1 To 0 Step -1
+            GroupStack(c).Stop = w - 1
+        Next c
+        GIdx = 0
+    End If
 End Sub
 
 
@@ -86,20 +104,17 @@ Sub RenderPin(FieldData As String, YPos As Integer)
     
     DF = Split(FieldData, ",")
     If UBound(DF) > 1 Then
-        If HasName = True Then  ' Not necessary
-            PinList(nPins).X = 15 * DF(0) + XMargin
-            PinList(nPins).Y = YPos - 9
-            PinList(nPins).Color = Val(DF(1))
-            PinList(nPins).Txt = DF(2)
-            nPins = nPins + 1
-        End If
+        PinList(nPins).X = 15 * DF(0) + XMargin
+        PinList(nPins).Y = YPos - 9
+        PinList(nPins).Color = Val(DF(1))
+        PinList(nPins).Txt = DF(2)
+        nPins = nPins + 1
     End If
 End Sub
 
 Sub RenderName(FieldData As String)
     glColor4b 0, 0, 0, 127
     RenderText FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0
-    HasName = True
 End Sub
 
 Sub RenderText(Txt As String, xofs As Integer, yofs As Integer)

@@ -17,8 +17,20 @@ Private Type TPin
     X As Integer
     Y As Integer
     Color As Integer
-    Show As Boolean
     Txt As String
+    Show As Boolean
+End Type
+
+Private Type TGroup
+    Start As Integer
+    Stop As Integer
+    Color As Integer
+    Txt As String
+End Type
+
+Private Type TWave
+    DL As GLuint
+    Used As Boolean
 End Type
 
 Public Loaded As Boolean
@@ -26,9 +38,15 @@ Public Loaded As Boolean
 Public FontTex As GLuint
 Public PinTex As GLuint
 
-Public HasName As Boolean
 Public PinList(255) As TPin
+Public GroupStack(256) As TGroup
+
+Public UsedWave As Boolean
+
 Public nPins As Integer
+Public nGroups As Integer
+Public GIdx As Integer
+
 
 ' Settings
 Public LiveRefresh As Boolean
@@ -42,7 +60,7 @@ Public Nav_Y As Integer
 ' Display Lists
 Public PinDL As GLuint
 Public TicksDL As GLuint
-Public WaveDL(256) As GLuint    ' Blocks
+Public Waves(256) As TWave    ' Blocks
 Public CharDL(128) As GLuint    ' Characters
 
 Public DispLists(256) As WDispList  ' For blocks
@@ -50,6 +68,7 @@ Public DispLists(256) As WDispList  ' For blocks
 Public FilePath As String
 
 Public XMargin As Integer
+Public YMargin As Integer
 
 Public Saved As Boolean
 Public DataTxt() As String
@@ -84,12 +103,23 @@ Public Sub Display()
     glCallList TicksDL
     
     glPopMatrix
-    glTranslatef 0, 20, 0
+    glTranslatef 0, YMargin, 0
     glPushMatrix
     
+    ' Draw groups
+    For w = 0 To nGroups
+        SetDataColor GroupStack(w).Color, 15
+        glBegin bmPolygon
+            glVertex2f 0, GroupStack(w).Start
+            glVertex2f MainFrm.ScaleWidth, GroupStack(w).Start
+            glVertex2f MainFrm.ScaleWidth, GroupStack(w).Stop
+            glVertex2f 0, GroupStack(w).Stop
+        glEnd
+    Next w
+    
     ' Draw waves
-    For w = 0 To nWaves
-        If glIsList(WaveDL(w)) = 1 Then glCallList WaveDL(w)
+    For w = 0 To nWaves - 1
+        If Waves(w).Used = True Then glCallList Waves(w).DL
     Next w
     
     ' Draw pins
@@ -140,7 +170,7 @@ Public Sub Display()
     SwapBuffers MainFrm.hDC
 End Sub
 
-Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
+Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
     Dim XDraw As Integer
     Dim YDraw As Integer
     Dim c As Integer
@@ -167,16 +197,19 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
     Dim sx, sy, ex, ey As Integer
     
     Found = False
-    For f = 0 To UBound(fields)
-        eq = InStr(1, fields(f), ":")   ' Field has type:data pair ?
+    For f = 0 To UBound(Fields)
+        eq = InStr(1, Fields(f), ":")   ' Field has type:data pair ?
         If eq > 0 Then
-            fields(f) = Replace(fields(f), Chr(9), " ")    ' Tab to space
-            FieldType = Trim(LCase(Left(fields(f), eq - 1)))
-            FieldData = Trim(Right(fields(f), Len(fields(f)) - eq))
-            If FieldType = TypeMatch Then
-                Found = True
-                Exit For
-            End If
+            Fields(f) = Replace(Fields(f), Chr(9), " ")    ' Tab to space
+            FieldType = Trim(LCase(Left(Fields(f), eq - 1)))
+            FieldData = Trim(Right(Fields(f), Len(Fields(f)) - eq))
+        Else
+            ' Line only has field with no data
+            FieldType = Trim(LCase(Fields(f)))
+        End If
+        If FieldType = TypeMatch Then
+            Found = True
+            Exit For
         End If
     Next f
         
@@ -186,11 +219,25 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
         RenderRuler FieldData
     ElseIf FieldType = "name" Then
         RenderName FieldData
+        UsedWave = True
     ElseIf FieldType = "data" Then
         RenderData FieldData
     ElseIf FieldType = "pin" Then
         RenderPin FieldData, w * 20
+    ElseIf FieldType = "group" Then
+        GroupStack(GIdx).Start = (w * 20) - 4
+        DF = Split(FieldData, ",")
+        GroupStack(GIdx).Txt = DF(0)
+        GroupStack(GIdx).Color = Val(DF(1))
+        If GIdx > nGroups Then nGroups = GIdx
+        GIdx = GIdx + 1
+    ElseIf FieldType = "groupend" Then
+        If GIdx > 0 Then
+            GIdx = GIdx - 1
+            GroupStack(GIdx).Stop = (w * 20) - 4
+        End If
     ElseIf FieldType = "wave" Then
+        UsedWave = True
         LastBlk = "z"   ' Default block
         DataState = -1
         dti = 0
@@ -206,7 +253,13 @@ Sub ProcessFields(fields() As String, TypeMatch As String, w As Integer)
             blk = PBlk
             
             If PBlk = "." Then
-                PBlk = LastBlk     ' Repeat
+                If LastBlk = "H" Then
+                    PBlk = "h"          ' Adapt
+                ElseIf LastBlk = "L" Then
+                    PBlk = "l"          ' Adapt
+                Else
+                    PBlk = LastBlk      ' Repeat
+                End If
                 blk = PBlk
             End If
             
