@@ -2,7 +2,7 @@ VERSION 5.00
 Begin VB.Form SettingsFrm 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "Settings"
-   ClientHeight    =   2250
+   ClientHeight    =   2355
    ClientLeft      =   45
    ClientTop       =   330
    ClientWidth     =   4680
@@ -10,15 +10,31 @@ Begin VB.Form SettingsFrm
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   2250
+   ScaleHeight     =   2355
    ScaleWidth      =   4680
    StartUpPosition =   2  'CenterScreen
+   Begin VB.CheckBox Check3 
+      Caption         =   "Load last opened file"
+      Height          =   255
+      Left            =   120
+      TabIndex        =   6
+      Top             =   1320
+      Width           =   1935
+   End
+   Begin VB.CheckBox Check2 
+      Caption         =   "Alt shows all pin notes"
+      Height          =   255
+      Left            =   120
+      TabIndex        =   5
+      Top             =   1080
+      Width           =   1935
+   End
    Begin VB.CommandButton Command2 
       Caption         =   "Cancel"
       Height          =   495
       Left            =   1680
       TabIndex        =   1
-      Top             =   1560
+      Top             =   1680
       Width           =   1335
    End
    Begin VB.CommandButton Command1 
@@ -26,7 +42,7 @@ Begin VB.Form SettingsFrm
       Height          =   495
       Left            =   3120
       TabIndex        =   0
-      Top             =   1560
+      Top             =   1680
       Width           =   1335
    End
    Begin VB.CheckBox Check1 
@@ -65,16 +81,18 @@ Attribute VB_Exposed = False
 Dim LocalSpacing As Single
 
 Private Sub Command1_Click()
-    If Check1.Value = vbChecked Then
-        LiveRefresh = True
-    Else
-        LiveRefresh = False
-    End If
+    LiveRefresh = C2B(Check1.Value)
+    AltBubbles = C2B(Check2.Value)
+    OpenLast = C2B(Check3.Value)
+    
     If LocalSpacing <> Spacing Then
         Spacing = LocalSpacing
         RenderTicks
         Redraw
     End If
+    
+    SaveSettings
+    
     Me.Hide
 End Sub
 
@@ -83,11 +101,9 @@ Private Sub Command2_Click()
 End Sub
 
 Private Sub Form_Load()
-    If LiveRefresh = True Then
-        Check1.Value = vbChecked
-    Else
-        Check1.Value = vbUnchecked
-    End If
+    Check1.Value = B2C(LiveRefresh)
+    Check2.Value = B2C(AltBubbles)
+    Check3.Value = B2C(OpenLast)
     
     LocalSpacing = Spacing
     

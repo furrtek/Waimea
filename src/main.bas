@@ -33,6 +33,8 @@ Private Type TWave
     Used As Boolean
 End Type
 
+Public FSO As FileSystemObject
+
 Public Loaded As Boolean
 
 Public FontTex As GLuint
@@ -47,10 +49,13 @@ Public nPins As Integer
 Public nGroups As Integer
 Public GIdx As Integer
 
-
 ' Settings
-Public LiveRefresh As Boolean
 Public Spacing As Single
+Public LiveRefresh As Boolean
+Public AltBubbles As Boolean
+Public OpenLast As Boolean
+
+Public LastOpened As String
 
 Public nWaves As Integer
 
@@ -94,9 +99,8 @@ Public Sub Display()
     glHint GL_LINE_SMOOTH_HINT, GL_NICEST
     
     glTranslatef Nav_X, Nav_Y, 0#
-    glPushMatrix
-    
     glScalef Spacing, 1, 1
+    glPushMatrix
     
     ' Draw ticks
     glColor4b 0, 0, 0, 31

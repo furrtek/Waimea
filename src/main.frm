@@ -32,12 +32,12 @@ Begin VB.Form MainFrm
          Strikethrough   =   0   'False
       EndProperty
       Height          =   2205
-      Left            =   0
+      Left            =   60
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
       TabIndex        =   0
       Top             =   4560
-      Width           =   14175
+      Width           =   14055
    End
    Begin VB.Image Image1 
       Height          =   4455
@@ -95,7 +95,7 @@ Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
 
 Private Sub Form_Load()
-    On Error GoTo skipdebug
+    Set FSO = New FileSystemObject
     
     Dim ln As String
     
@@ -103,43 +103,54 @@ Private Sub Form_Load()
     YMargin = 20
     Nav_X = 0
     Nav_Y = 0
-    Spacing = 1
-    LiveRefresh = True
-    Loaded = False
     
     FilePath = ""
     SetSaveState False
     
     If Not CreateGLWindow(640, 480, 16) Then End    ' 24 ?
     
+    LoadSettings
     LoadLayout
     LoadFont
     LoadPin
     
-    ' FOR DEBUG ONLY !
-    Dim dbgload As String
-    FilePath = App.Path & "\waveform.txt"
-    Open FilePath For Input As #1
-        dbgload = ""
-        While Not EOF(1)
-            Line Input #1, ln
-            dbgload = dbgload & ln & vbCrLf
-        Wend
-        JustLoaded = True
-        Text1.Text = dbgload
-        DoEvents
-        SetSaveState True
-    Close #1
+    If OpenLast = True Then
+        If LoadWaveDef(LastOpened) = False Then
+            LoadWaveDef App.Path & "\demo.txt"
+        End If
+    Else
+        LoadWaveDef App.Path & "\demo.txt"
+    End If
     
     Loaded = True
     
     Redraw
-
-    Exit Sub
-
-skipdebug:
-    If Err.Number <> 53 Then MsgBox "Error in load.", vbCritical
 End Sub
+
+Function LoadWaveDef(fn As String)
+    Dim ln As String
+    Dim LoadStr As String
+
+    If FSO.FileExists(fn) = False Then
+        LoadWaveDef = False
+        Exit Function
+    End If
+
+    Open fn For Input As #1
+        LoadStr = ""
+        While Not EOF(1)
+            Line Input #1, ln
+            LoadStr = LoadStr & ln & vbCrLf
+        Wend
+        JustLoaded = True       ' Not used anymore ?
+        Text1.Text = LoadStr
+        DoEvents
+        FilePath = fn
+        SetSaveState True
+    Close #1
+    
+    LoadWaveDef = True
+End Function
 
 Private Sub Form_Paint()
     Redraw
@@ -156,6 +167,7 @@ Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     End If
     
     If Done = True Then
+        SaveSettings
         SettingsFrm.Hide
         End
     Else
@@ -167,7 +179,7 @@ Private Sub Form_Resize()
     ReSizeGLScene ScaleWidth, ScaleHeight
     If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
         Text1.Top = MainFrm.ScaleHeight - Text1.Height
-        Text1.Width = MainFrm.ScaleWidth
+        Text1.Width = MainFrm.ScaleWidth - 4
         Image1.Width = MainFrm.ScaleWidth
         Image1.Height = MainFrm.ScaleHeight - Text1.Height - 8
     End If
@@ -239,10 +251,7 @@ Private Sub menu_export_Click()
 End Sub
 
 Private Sub menu_open_Click()
-    On Error GoTo Abort
-    
-    Dim ln As String
-    Dim LoadStr As String
+    Dim fn As String
     
     CommonDialog1.DialogTitle = "Open waveform file"
     CommonDialog1.ShowOpen
@@ -251,20 +260,9 @@ Private Sub menu_open_Click()
         If Confirm = False Then Exit Sub
     End If
     
-    Open CommonDialog1.FileName For Input As #1
-        LoadStr = ""
-        While Not EOF(1)
-            Line Input #1, ln
-            LoadStr = LoadStr & ln & vbCrLf
-        Wend
-        JustLoaded = True
-        Text1.Text = LoadStr
-        DoEvents
-        FilePath = CommonDialog1.FileName
-        SetSaveState True
-    Close #1
+    fn = CommonDialog1.filename
     
-Abort:
+    If FSO.FileExists(fn) = True Then LoadWaveDef fn
 End Sub
 
 Private Sub menu_save_Click()
@@ -274,24 +272,29 @@ End Sub
 Sub SaveFile(Force As Boolean)
     On Error GoTo Abort
     
+    Dim fn As String
     Dim ln As String
     
     If FilePath = "" Or Force = True Then
         CommonDialog1.DialogTitle = "Save waveform file"
         CommonDialog1.ShowSave
     Else
-        CommonDialog1.FileName = FilePath
+        CommonDialog1.filename = FilePath
     End If
     
-    ln = Text1.Text
+    fn = CommonDialog1.filename
     
-    Open CommonDialog1.FileName For Output As #1
-        If Len(ln) >= 2 Then
-            If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
-        End If
-        Print #1, Text1.Text;
-        SetSaveState True
-    Close #1
+    If FSO.FileExists(fn) = True Then
+        ln = Text1.Text
+        Open CommonDialog1.filename For Output As #1
+            If Len(ln) >= 2 Then
+                If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
+            End If
+            Print #1, Text1.Text;
+            SetSaveState True
+        Close #1
+    End If
+    
 Abort:
 End Sub
 
@@ -300,7 +303,7 @@ Private Sub menu_saveas_Click()
 End Sub
 
 Private Sub menu_settings_Click()
-    SettingsFrm.Show
+    SettingsFrm.Show 1
 End Sub
 
 Private Sub Text1_Change()

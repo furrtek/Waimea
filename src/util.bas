@@ -62,3 +62,43 @@ Function MatchT(ByVal s As String) As Integer
     If s = "SH" Then MatchT = 4     ' Polygon
 End Function
 
+Function S2B(Ins As String) As Boolean
+    If Ins = "1" Or LCase(Ins) = "true" Then
+        S2B = True
+    Else
+        S2B = False
+    End If
+End Function
+
+Function B2S(Ins As Boolean) As String
+    If Ins = True Then
+        B2S = "1"
+    Else
+        B2S = "0"
+    End If
+End Function
+
+Function B2C(Ins As Boolean) As CheckBoxConstants
+    If Ins = True Then
+        B2C = vbChecked
+    Else
+        B2C = vbUnchecked
+    End If
+End Function
+
+Function C2B(Ins As CheckBoxConstants) As Boolean
+    If Ins = vbChecked Then
+        C2B = True
+    Else
+        C2B = False
+    End If
+End Function
+
+Function ErrorBox(Msg As String, Quit As Boolean)
+    If Quit = False Then
+        MsgBox Msg, vbExclamation, "Error"
+    Else
+        MsgBox Msg & vbCrLf & "Waimea will close.", vbCritical, "Error"
+        End
+    End If
+End Function

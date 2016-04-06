@@ -1,13 +1,69 @@
-Attribute VB_Name = "LayoutMd"
+Attribute VB_Name = "LoadMd"
+Sub LoadSettings()
+    Dim fn As String
+    Dim ln As String
+    Dim Setting() As String
+    
+    ' Defaults
+    Spacing = 1
+    LiveRefresh = True
+    AltBubbles = True
+    OpenLast = True
+    
+    fn = App.Path & "\settings.ini"
+    
+    If FSO.FileExists(fn) = True Then
+        Open fn For Input As #1
+            Do
+                Line Input #1, ln
+                Setting = Split(LCase(Trim(ln)), "=")
+                Setting(1) = Trim(Setting(1))
+                If UBound(Setting) >= 0 Then
+                    If Setting(0) = "spacing" Then Spacing = Val(Setting(1))
+                    If Setting(0) = "liverefresh" Then LiveRefresh = S2B(Setting(1))
+                    If Setting(0) = "altbubbles" Then AltBubbles = S2B(Setting(1))
+                    If Setting(0) = "openlast" Then OpenLast = S2B(Setting(1))
+                    If Setting(0) = "lastopened" Then LastOpened = Setting(1)
+                End If
+            Loop While Not EOF(1)
+        Close #1
+    End If
+End Sub
+
+Sub SaveSettings()
+    Dim fn As String
+    Dim ln As String
+    Dim Setting() As String
+    
+    fn = App.Path & "\settings.ini"
+    
+    Open fn For Output As #1
+        ln = "spacing=" & Spacing
+        Print #1, ln
+        ln = "liverefresh=" & B2S(LiveRefresh)
+        Print #1, ln
+        ln = "altbubbles=" & B2S(AltBubbles)
+        Print #1, ln
+        ln = "openlast=" & B2S(OpenLast)
+        Print #1, ln
+        ln = "lastopened=" & FilePath
+        Print #1, ln
+    Close #1
+End Sub
 
 Public Sub LoadFont()
+    Dim fn As String
     Dim FontData() As GLbyte
     Dim bd As Byte
     Dim h, w As Integer
     
+    fn = App.Path & "\font.tga"
+    
+    If FSO.FileExists(fn) = False Then ErrorBox "The file font.tga is missing.", True
+    
     ReDim FontData(3, 511, 255)
     
-    Open App.Path & "\font.tga" For Binary As #1
+    Open fn For Binary As #1
         Seek #1, 19
         Get #1, , FontData
     Close #1
@@ -22,13 +78,18 @@ Public Sub LoadFont()
 End Sub
 
 Public Sub LoadPin()
+    Dim fn As String
     Dim PinData() As GLbyte
     Dim bd As Byte
     Dim h, w As Integer
     
+    fn = App.Path & "\pin.tga"
+    
+    If FSO.FileExists(fn) = False Then ErrorBox "The file pin.tga is missing.", True
+    
     ReDim PinData(3, 63, 63)
     
-    Open App.Path & "\pin.tga" For Binary As #1
+    Open fn For Binary As #1
         Seek #1, 19
         Get #1, , PinData
     Close #1
@@ -43,6 +104,7 @@ Public Sub LoadPin()
 End Sub
 
 Sub LoadLayout()
+    Dim fn As String
     Dim lidx As Integer
     Dim didx As Integer
     Dim lline As String
@@ -56,6 +118,10 @@ Sub LoadLayout()
     Dim d As Integer
     
     Dim sx, sy, ex, ey As Single
+    
+    fn = App.Path & "\layout.txt"
+    
+    If FSO.FileExists(fn) = False Then ErrorBox "The file layout.txt is missing.", True
     
     ' Pin display list
     PinDL = glGenLists(1)
