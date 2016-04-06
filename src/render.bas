@@ -1,4 +1,5 @@
 Attribute VB_Name = "RenderMd"
+
 Sub RenderTicks()
     Dim c As Integer
     Dim XPos As Single
@@ -31,8 +32,8 @@ Public Sub Render()
     nPins = 0
     nWaves = 0
     nRulers = 0
-    nGroups = 0
-    GIdx = 0
+    GIdxAdd = 0
+    GLevel = 0
     For w = 0 To UBound(Lines)
         ReDim DataTxt(1)
         DataTxt(0) = ""
@@ -63,12 +64,12 @@ Public Sub Render()
     Next w
     
     ' Fix groups if needed
-    If GIdx > 0 Then
-        For c = GIdx - 1 To 0 Step -1
-            GroupStack(c).Stop = w - 1
-        Next c
-        GIdx = 0
-    End If
+    'If GIdx > 0 Then
+    '    For c = GIdx - 1 To 0 Step -1
+    '        GroupStack(c).Stop = w - 1
+    '    Next c
+    '    GIdx = 0
+    'End If
 End Sub
 
 

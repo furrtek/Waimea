@@ -31,6 +31,7 @@ End Type
 Private Type TGroup
     Start As Integer
     Stop As Integer
+    Level As Integer
     Color As Integer
     Txt As String
 End Type
@@ -60,9 +61,9 @@ Public Rulers(256) As TRuler
 Public UsedWave As Boolean
 
 Public nPins As Integer
-Public nGroups As Integer
 Public nRulers As Integer
-Public GIdx As Integer
+Public GIdxAdd As Integer
+Public GLevel As Integer
 
 Public WaveName As String
 
@@ -141,8 +142,12 @@ Public Sub Display()
     glPushMatrix
     
     ' Draw groups
-    For w = 0 To nGroups - 1
+    For w = 0 To GIdxAdd - 1
         ' Shapes
+        glPopMatrix
+        glPushMatrix
+        glTranslatef GroupStack(w).Level * 14, 0, 0
+        glPushMatrix
         SetDataColor GroupStack(w).Color, GroupAlpha
         glBegin bmPolygon
             glVertex2f 0, GroupStack(w).Start
@@ -152,9 +157,8 @@ Public Sub Display()
         glEnd
         
         ' Text
-        SetDataColor GroupStack(w).Color, 127
         glPopMatrix
-        glPushMatrix
+        SetDataColor GroupStack(w).Color, 127
         glTranslatef 0, ((GroupStack(w).Stop + GroupStack(w).Start) / 2) + ((Len(GroupStack(w).Txt) * 7) / 2), 0
         glRotatef -90, 0, 0, 1
         RenderText GroupStack(w).Txt, 2, 0, 0.8
@@ -281,19 +285,27 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
     ElseIf FieldType = "pin" Then
         RenderPin FieldData, w * 20
     ElseIf FieldType = "group" Then
-        GroupStack(GIdx).Start = (w * 20) - 4
         DF = Split(FieldData, ",")
         If UBound(DF) >= 1 Then
-            GroupStack(GIdx).Txt = DF(0)
-            GroupStack(GIdx).Color = Val(DF(1))
-            GIdx = GIdx + 1
-            If GIdx > nGroups Then nGroups = GIdx
+            With GroupStack(GIdxAdd)
+                .Level = GLevel
+                .Start = (w * 20) - 4
+                .Txt = DF(0)
+                .Color = Val(DF(1))
+                .Stop = -1
+            End With
+            GIdxAdd = GIdxAdd + 1
+            GLevel = GLevel + 1
         End If
     ElseIf FieldType = "groupend" Then
-        If GIdx > 0 Then
-            GIdx = GIdx - 1
-            GroupStack(GIdx).Stop = (w * 20) - 4
-        End If
+        ' Go back up the groupstack to see what was the last started group
+        For c = GIdxAdd - 1 To 0 Step -1
+            If GroupStack(c).Stop = -1 Then
+                GroupStack(c).Stop = (w * 20) - 4
+                GLevel = GLevel - 1
+                Exit For
+            End If
+        Next c
     ElseIf FieldType = "wave" Then
         UsedWave = True
         LastBlk = "z"   ' Default block

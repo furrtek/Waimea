@@ -155,6 +155,7 @@ Function LoadWaveDef(fn As String)
         SetSaveState True
     Close #1
     
+    Redraw
     LoadWaveDef = True
 End Function
 

@@ -49,7 +49,7 @@ End Function
 
 Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     If DataColor = 0 Then
-        SetGLColor Color_Waves
+        glColor4b 0, 0, 0, Alpha  ' Black
     ElseIf DataColor = 1 Then
         glColor4b 127, 0, 0, Alpha  ' Red
     ElseIf DataColor = 2 Then
