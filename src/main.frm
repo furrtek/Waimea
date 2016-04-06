@@ -23,7 +23,7 @@ Begin VB.Form MainFrm
    Begin VB.TextBox Text1 
       BorderStyle     =   0  'None
       BeginProperty Font 
-         Name            =   "Fixedsys"
+         Name            =   "Bitstream Vera Sans Mono"
          Size            =   9
          Charset         =   0
          Weight          =   400
@@ -100,10 +100,10 @@ Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
 
+' Todo: Ticks and groups sizes > MainFrm size
+
 Private Sub Form_Load()
     Set FSO = New FileSystemObject
-    
-    Dim ln As String
     
     XMargin = 64
     YMargin = 20
@@ -163,7 +163,6 @@ Private Sub Form_Paint()
     Redraw
 End Sub
 
-
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     Dim Done As Boolean
     
@@ -215,6 +214,7 @@ End Sub
 Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
     Dim c As Integer
     Dim PopupFlag As Boolean
+    Dim PLX, PLY As Single
     
     X = X / 15
     Y = Y / 15
@@ -226,10 +226,12 @@ Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y
     ElseIf Keys(18) = False Then
         PopupFlag = False
         For c = 0 To nPins - 1
-            If (X > PinList(c).X - 10 + Nav_X) And _
-                (X < PinList(c).X + 10 + Nav_X) And _
-                (Y > PinList(c).Y + YMargin + Nav_Y) And _
-                (Y < PinList(c).Y + YMargin + 20 + Nav_Y) Then
+            PLX = PinList(c).X * Spacing
+            PLY = PinList(c).Y * Spacing
+            If (X > PLX - 10 + Nav_X) And _
+                (X < PLX + 10 + Nav_X) And _
+                (Y > PLY + YMargin + Nav_Y) And _
+                (Y < PLY + YMargin + 20 + Nav_Y) Then
                 If PinList(c).Show = False Then
                     PopupFlag = True
                     PinList(c).Show = True

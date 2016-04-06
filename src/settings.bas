@@ -23,7 +23,7 @@ Sub LoadSettings()
                 Setting(1) = Trim(Setting(1))
                 If UBound(Setting) >= 0 Then
                     ' Todo: Sanitize !
-                    If Setting(0) = "spacing" Then Spacing = Val(Setting(1))
+                    If Setting(0) = "spacing" Then Spacing = Val(Setting(1)) / 10
                     If Setting(0) = "liverefresh" Then LiveRefresh = S2B(Setting(1))
                     If Setting(0) = "altbubbles" Then AltBubbles = S2B(Setting(1))
                     If Setting(0) = "openlast" Then OpenLast = S2B(Setting(1))
@@ -47,7 +47,7 @@ Sub SaveSettings()
     fn = App.Path & "\settings.ini"
     
     Open fn For Output As #1
-        ln = "spacing=" & Spacing
+        ln = "spacing=" & Int(Spacing * 10)
         Print #1, ln
         ln = "liverefresh=" & B2S(LiveRefresh)
         Print #1, ln

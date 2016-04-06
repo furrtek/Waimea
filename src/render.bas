@@ -1,7 +1,6 @@
 Attribute VB_Name = "RenderMd"
 
 Sub RenderTicks()
-    Dim c As Integer
     Dim XPos As Single
     
     If glIsList(TicksDL) = GL_TRUE Then glDeleteLists TicksDL, 1
@@ -9,9 +8,9 @@ Sub RenderTicks()
     glNewList TicksDL, GL_COMPILE
         glBegin bmLines
             XPos = XMargin
-            While (XPos < MainFrm.ScaleWidth)
+            While (XPos < MaxWidth)
                 glVertex2d XPos, 0
-                glVertex2d XPos, MainFrm.ScaleHeight
+                glVertex2d XPos, MaxHeight
                 XPos = XPos + 15
             Wend
         glEnd
@@ -19,7 +18,6 @@ Sub RenderTicks()
 End Sub
 
 Public Sub Render()
-    Dim c As Integer
     Dim w As Integer
     Dim WaveDef As String
     Dim Lines() As String
@@ -34,6 +32,8 @@ Public Sub Render()
     nRulers = 0
     GIdxAdd = 0
     GLevel = 0
+    MaxWidth = XMargin + 32
+    MaxHeight = YMargin
     For w = 0 To UBound(Lines)
         ReDim DataTxt(1)
         DataTxt(0) = ""
@@ -58,18 +58,16 @@ Public Sub Render()
                     Waves(nWaves).Name = WaveName
                     nWaves = nWaves + 1
                     glTranslatef 0#, 20#, 0#    ' Next line
+                    MaxHeight = MaxHeight + 20
                 End If
             glEndList
         End If
     Next w
     
-    ' Fix groups if needed
-    'If GIdx > 0 Then
-    '    For c = GIdx - 1 To 0 Step -1
-    '        GroupStack(c).Stop = w - 1
-    '    Next c
-    '    GIdx = 0
-    'End If
+    MaxWidth = MaxWidth + 15
+    
+    ' Regen ticks
+    RenderTicks
 End Sub
 
 
@@ -99,7 +97,6 @@ End Sub
 
 Sub RenderPin(FieldData As String, YPos As Integer)
     Dim DF() As String
-    Dim f As Integer
     
     DF = Split(FieldData, ",")
     If UBound(DF) > 1 Then

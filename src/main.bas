@@ -62,6 +62,7 @@ Public UsedWave As Boolean
 
 Public nPins As Integer
 Public nRulers As Integer
+Public nWaves As Integer
 Public GIdxAdd As Integer
 Public GLevel As Integer
 
@@ -75,15 +76,15 @@ Public OpenLast As Boolean
 Public GroupAlpha As Integer
 Public ColorScheme As Integer
 Public AntiAliasing As Boolean
+Public LastOpened As String
 
 Public Color_Background As TGLByteColor
 Public Color_Ticks As TGLByteColor
 Public Color_Waves As TGLByteColor
 Public Color_Names As TGLByteColor
 
-Public LastOpened As String
-
-Public nWaves As Integer
+Public MaxWidth As Integer
+Public MaxHeight As Integer
 
 Public Nav_X As Integer
 Public Nav_Y As Integer
@@ -93,7 +94,6 @@ Public PinDL As GLuint
 Public TicksDL As GLuint
 Public Waves(256) As TWave    ' Blocks
 Public CharDL(128) As GLuint    ' Characters
-
 Public DispLists(256) As WDispList  ' For blocks
 
 Public FilePath As String
@@ -104,8 +104,7 @@ Public YMargin As Integer
 Public Saved As Boolean
 Public DataTxt() As String
 
-
-Public Keys(255) As Boolean             ' used to keep track of key_downs
+Public Keys(255) As Boolean
 
 Private hrc As Long
 
@@ -115,8 +114,8 @@ Public Sub Display()
     
     If Loaded = False Then Exit Sub
     
-    glMatrixMode mmModelView        ' Select The Modelview Matrix
-    glLoadIdentity                  ' Reset The Modelview Matrix
+    glMatrixMode mmModelView
+    glLoadIdentity
     
     glClearColor Color_Background.Red / 127, Color_Background.Green / 127, Color_Background.Blue / 127, 1
     glClear clrColorBufferBit Or clrDepthBufferBit
@@ -137,6 +136,17 @@ Public Sub Display()
     SetGLColor Color_Ticks
     glCallList TicksDL
     
+    ' Draw rulers
+    glPopMatrix
+    glPushMatrix
+    For w = 0 To nRulers - 1
+        SetDataColor Rulers(w).Color, 63
+        glBegin bmLines
+            glVertex2d Rulers(w).X, 0
+            glVertex2d Rulers(w).X, MaxHeight
+        glEnd
+    Next w
+    
     glPopMatrix
     glTranslatef 0, YMargin, 0
     glPushMatrix
@@ -151,8 +161,8 @@ Public Sub Display()
         SetDataColor GroupStack(w).Color, GroupAlpha
         glBegin bmPolygon
             glVertex2f 0, GroupStack(w).Start
-            glVertex2f MainFrm.ScaleWidth, GroupStack(w).Start
-            glVertex2f MainFrm.ScaleWidth, GroupStack(w).Stop
+            glVertex2f MaxWidth, GroupStack(w).Start
+            glVertex2f MaxWidth, GroupStack(w).Stop
             glVertex2f 0, GroupStack(w).Stop
         glEnd
         
@@ -171,17 +181,6 @@ Public Sub Display()
         If Waves(w).Used = True Then glCallList Waves(w).DL
     Next w
     
-    ' Draw rulers
-    glPopMatrix
-    glPushMatrix
-    For w = 0 To nRulers - 1
-        SetDataColor Rulers(w).Color, 63
-        glBegin bmLines
-            glVertex2d Rulers(w).X, 0
-            glVertex2d Rulers(w).X, MainFrm.ScaleHeight
-        glEnd
-    Next w
-    
     ' Draw pins
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     glEnable glcTexture2D
@@ -189,7 +188,7 @@ Public Sub Display()
     For w = 0 To nPins - 1
         glPopMatrix
         glPushMatrix
-        glTranslatef (PinList(w).X * Spacing) - 10, PinList(w).Y, 0
+        glTranslatef PinList(w).X - 10, PinList(w).Y, 0
         SetDataColor PinList(w).Color, 127
         glCallList PinDL
     Next w
@@ -415,6 +414,8 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
             
             glTranslatef 15, 0, 0
         Next c
+        
+        If XDraw > MaxWidth Then MaxWidth = XDraw
         
         glPopMatrix
     End If

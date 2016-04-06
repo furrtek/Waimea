@@ -12,8 +12,6 @@ Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
 
     glMatrixMode mmModelView
     glLoadIdentity
-    
-    RenderTicks     ' Regen ticks
 End Sub
 
 Public Sub InitGL()
