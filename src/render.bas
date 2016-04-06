@@ -37,13 +37,14 @@ Public Sub Render()
         ReDim DataTxt(1)
         DataTxt(0) = ""
         UsedWave = False
+        Waves(nWaves).Used = False
         Fields = Split(Lines(w), ";")
-        If glIsList(Waves(w).DL) = GL_TRUE Then
-            glDeleteLists Waves(w).DL, 1
+        If glIsList(Waves(nWaves).DL) = GL_TRUE Then
+            glDeleteLists Waves(nWaves).DL, 1
         End If
         If UBound(Fields) >= 0 Then
-            Waves(w).DL = glGenLists(1)
-            glNewList Waves(w).DL, GL_COMPILE   ' Parse priority is important here
+            Waves(nWaves).DL = glGenLists(1)
+            glNewList Waves(nWaves).DL, GL_COMPILE   ' Parse priority is important here
                 ProcessFields Fields, "group", nWaves
                 ProcessFields Fields, "groupend", nWaves
                 ProcessFields Fields, "name", nWaves
