@@ -2,9 +2,7 @@ Attribute VB_Name = "RenderMd"
 
 Sub RenderTicks()
     Dim XPos As Single
-    
-    If glIsList(TicksDL) = GL_TRUE Then glDeleteLists TicksDL, 1
-    TicksDL = glGenLists(1)
+
     glNewList TicksDL, GL_COMPILE
         glBegin bmLines
             XPos = XMargin
@@ -40,12 +38,11 @@ Public Sub Render()
         UsedWave = False
         Waves(nWaves).Used = False
         Fields = Split(Lines(w), ";")
-        If glIsList(Waves(nWaves).DL) = GL_TRUE Then
-            glDeleteLists Waves(nWaves).DL, 1
-        End If
+        'If glIsList(Waves(nWaves).DL) = GL_TRUE Then
+        '    glDeleteLists Waves(nWaves).DL, 1
+        'End If
         If UBound(Fields) >= 0 Then
-            Waves(nWaves).DL = glGenLists(1)
-            glNewList Waves(nWaves).DL, GL_COMPILE   ' Parse priority is important here
+            glNewList Waves(nWaves).DL, lstCompile   ' Parse priority is important here
                 ProcessFields Fields, "group", nWaves
                 ProcessFields Fields, "groupend", nWaves
                 ProcessFields Fields, "name", nWaves

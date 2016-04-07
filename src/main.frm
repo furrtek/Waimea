@@ -100,9 +100,9 @@ Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
 
-' Todo: Ticks and groups sizes > MainFrm size
-
 Private Sub Form_Load()
+    Dim w As Integer
+    
     Set FSO = New FileSystemObject
     
     XMargin = 64
@@ -114,6 +114,12 @@ Private Sub Form_Load()
     SetSaveState False
     
     If Not CreateGLWindow(640, 480, 16) Then End    ' 24 ?
+    
+    TicksDL = glGenLists(1)
+    For w = 0 To 255
+        Waves(w).DL = glGenLists(1)
+    Next w
+    
     
     LoadSettings
     LoadLayout
@@ -156,11 +162,12 @@ Function LoadWaveDef(fn As String)
     Close #1
     
     Redraw
+    
     LoadWaveDef = True
 End Function
 
 Private Sub Form_Paint()
-    Redraw
+    If Loaded = True Then Redraw
 End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
@@ -207,7 +214,7 @@ Private Sub Image1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y
     ElseIf Button = 2 Then
         Nav_X = 0
         Nav_Y = 0
-        Redraw
+        Display
     End If
 End Sub
 

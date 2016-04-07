@@ -90,6 +90,7 @@ Public Nav_X As Integer
 Public Nav_Y As Integer
 
 ' Display Lists
+Public EverythingDL As GLuint
 Public PinDL As GLuint
 Public TicksDL As GLuint
 Public Waves(256) As TWave    ' Blocks
@@ -109,14 +110,6 @@ Public Keys(255) As Boolean
 Private hrc As Long
 
 Public Sub Display()
-    Dim w As Integer
-    Dim PinTextLen As Integer
-    
-    If Loaded = False Then Exit Sub
-    
-    glMatrixMode mmModelView
-    glLoadIdentity
-    
     glClearColor Color_Background.Red / 127, Color_Background.Green / 127, Color_Background.Blue / 127, 1
     glClear clrColorBufferBit Or clrDepthBufferBit
     
@@ -128,16 +121,35 @@ Public Sub Display()
     
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     
+    glMatrixMode mmModelView
+    glLoadIdentity
     glTranslatef Nav_X, Nav_Y, 0#
+    
+    glCallList EverythingDL
+    
+    SwapBuffers MainFrm.hDC
+End Sub
+
+Public Sub UpdateDisplay()
+    Dim w As Integer
+    Dim PinTextLen As Integer
+    
+    If Loaded = False Then Exit Sub
+    
+    ' Fill EverythingDL
+    If glIsList(EverythingDL) = GL_TRUE Then glDeleteLists EverythingDL, 1
+    EverythingDL = glGenLists(1)
+    glNewList EverythingDL, lstCompile
+    
     glScalef Spacing, 1, 1
-    glPushMatrix
+    glPushMatrix                            ' Initial matrix (nav, spacing)
     
     ' Draw ticks
     SetGLColor Color_Ticks
     glCallList TicksDL
     
     ' Draw rulers
-    glPopMatrix
+    glPopMatrix                             ' Restore initial matrix
     glPushMatrix
     For w = 0 To nRulers - 1
         SetDataColor Rulers(w).Color, 63
@@ -147,17 +159,17 @@ Public Sub Display()
         glEnd
     Next w
     
-    glPopMatrix
+    glPopMatrix                             ' Restore initial matrix
     glTranslatef 0, YMargin, 0
-    glPushMatrix
+    glPushMatrix                            ' Add Y margin, new origin
     
     ' Draw groups
     For w = 0 To GIdxAdd - 1
         ' Shapes
-        glPopMatrix
+        glPopMatrix                         ' Restore
         glPushMatrix
         glTranslatef GroupStack(w).Level * 14, 0, 0
-        glPushMatrix
+        glPushMatrix                        ' Level offset
         SetDataColor GroupStack(w).Color, GroupAlpha
         glBegin bmPolygon
             glVertex2f 0, GroupStack(w).Start
@@ -173,20 +185,20 @@ Public Sub Display()
         glRotatef -90, 0, 0, 1
         RenderText GroupStack(w).Txt, 2, 0, 0.8
     Next w
-    
+
     ' Draw waves
-    glPopMatrix
+    glPopMatrix                             ' Restore
     glPushMatrix
     For w = 0 To nWaves - 1
         If Waves(w).Used = True Then glCallList Waves(w).DL
     Next w
-    
+
     ' Draw pins
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     glEnable glcTexture2D
     glBindTexture glTexture2D, PinTex
     For w = 0 To nPins - 1
-        glPopMatrix
+        glPopMatrix                         ' Restore
         glPushMatrix
         glTranslatef PinList(w).X - 10, PinList(w).Y, 0
         SetDataColor PinList(w).Color, 127
@@ -197,7 +209,7 @@ Public Sub Display()
     ' Draw pin bubble if needed
     For w = 0 To nPins - 1
         If PinList(w).Show = True Then
-            glPopMatrix
+            glPopMatrix                     ' Restore
             glPushMatrix
             PinTextLen = Len(PinList(w).Txt) * 8 + 16
             glTranslatef PinList(w).X + 8, PinList(w).Y + 10, 0
@@ -225,8 +237,10 @@ Public Sub Display()
     Next w
     
     glPopMatrix
+    
+    glEndList
 
-    SwapBuffers MainFrm.hDC
+    Display
 End Sub
 
 Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
@@ -310,7 +324,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
         LastBlk = "z"   ' Default block
         DataState = -1
         dti = 0
-        
+
         glPushMatrix
         glTranslatef XMargin, 0, 0
         

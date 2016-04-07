@@ -28,7 +28,7 @@ End Sub
 
 Sub Redraw()
     Render
-    Display
+    UpdateDisplay
 End Sub
 
 Function Confirm() As Boolean
