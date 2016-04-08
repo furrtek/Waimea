@@ -87,6 +87,7 @@ Function MatchT(ByVal s As String) As Integer
     If s = "L" Then MatchT = 2      ' Line
     If s = "LS" Then MatchT = 3     ' Line strip
     If s = "SH" Then MatchT = 4     ' Polygon
+    If s = "LC" Then MatchT = 6     ' Line color
 End Function
 
 Function S2B(Ins As String) As Boolean

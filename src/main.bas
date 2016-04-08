@@ -50,6 +50,7 @@ End Type
 Public FSO As FileSystemObject
 
 Public Loaded As Boolean
+Public Measuring As Boolean
 
 Public FontTex As GLuint
 Public PinTex As GLuint
@@ -83,6 +84,11 @@ Public Color_Background As TGLByteColor
 Public Color_Ticks As TGLByteColor
 Public Color_Waves As TGLByteColor
 Public Color_Names As TGLByteColor
+
+Public Meas_X As Integer
+Public Meas_Y As Integer
+Public Cur_X As Integer
+Public Cur_Y As Integer
 
 Public MaxWidth As Integer
 Public MaxHeight As Integer
@@ -125,8 +131,19 @@ Public Sub Display()
     glMatrixMode mmModelView
     glLoadIdentity
     glTranslatef Nav_X, Nav_Y, 0#
+    glPushMatrix
     
     glCallList EverythingDL
+    
+    glPopMatrix
+    
+    If Measuring = True Then
+        SetGLColor Color_Names
+        glBegin bmLines
+            glVertex2f Meas_X, Meas_Y
+            glVertex2f Cur_X, Cur_Y
+        glEnd
+    End If
     
     SwapBuffers MainFrm.Picture1.hDC
 End Sub

@@ -60,7 +60,7 @@ Sub LoadLayout()
     Dim a() As String
     Dim b() As String
     Dim pidx As Integer
-    Dim t As Integer
+    Dim t As String
     Dim DataColor As Integer
     
     Dim c As Integer
@@ -123,23 +123,27 @@ Sub LoadLayout()
                     a = Split(lline, " ")
                     DispLists(lidx).Char = Left(a(1), 1)
                 Else
-                    a = Split(lline, " ")
-                    t = MatchT(a(0))
+                    a = Split(UCase(lline), " ")
+                    t = a(0)
                     
-                    If t < 2 Then
+                    If t = "SP" Or t = "EP" Then
                         b = Split(a(1), ",")
-                        If t = 0 Then
-                            DispLists(lidx).SP.X = b(0)
-                            DispLists(lidx).SP.Y = b(1)
-                        ElseIf t = 1 Then
-                            DispLists(lidx).EP.X = b(0)
-                            DispLists(lidx).EP.Y = b(1)
+                        If UBound(b) > 0 Then
+                            If t = "SP" Then
+                                DispLists(lidx).SP.X = b(0)
+                                DispLists(lidx).SP.Y = b(1)
+                            ElseIf t = "EP" Then
+                                DispLists(lidx).EP.X = b(0)
+                                DispLists(lidx).EP.Y = b(1)
+                            End If
                         End If
                     Else
-                        lline = a(1)
-                        a = Split(lline, ":")
-
-                        If t = 2 Then
+                        If UBound(a) > 0 Then
+                            lline = a(1)
+                            a = Split(lline, ":")
+                        End If
+                        
+                        If t = "L" Then
                             ' Line
                             glBegin bmLines
                                 b = Split(a(0), ",")
@@ -147,7 +151,7 @@ Sub LoadLayout()
                                 b = Split(a(1), ",")
                                 glVertex2f b(0), b(1)
                             glEnd
-                        ElseIf t = 3 Then
+                        ElseIf t = "LS" Then
                             ' Line strip
                             glBegin bmLineStrip
                             For c = 0 To UBound(a)
@@ -155,7 +159,7 @@ Sub LoadLayout()
                                 glVertex2f b(0), b(1)
                             Next c
                             glEnd
-                        ElseIf t = 4 Then
+                        ElseIf t = "SH" Then
                             ' Polygon
                             glBegin bmPolygon
                             For c = 0 To UBound(a)
@@ -163,6 +167,9 @@ Sub LoadLayout()
                                 glVertex2f b(0), b(1)
                             Next c
                             glEnd
+                        ElseIf t = "LC" Then
+                            ' Line color
+                            SetGLColor Color_Waves
                         End If
                     End If
                 End If

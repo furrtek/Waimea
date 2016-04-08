@@ -54,7 +54,7 @@ Begin VB.Form MainFrm
    Begin VB.Label Label1 
       BackStyle       =   0  'Transparent
       Caption         =   "Measure:"
-      ForeColor       =   &H000000FF&
+      ForeColor       =   &H00000000&
       Height          =   255
       Left            =   60
       TabIndex        =   1
@@ -110,7 +110,6 @@ Option Explicit
 
 Dim JustLoaded As Boolean   ' Not used anymore ?
 Dim Dragging As Boolean
-Dim Measuring As Boolean
 Dim Drag_X As Integer
 Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
@@ -123,8 +122,6 @@ Private Sub Form_Activate()
     
     XMargin = 64
     YMargin = 20
-    Nav_X = 0
-    Nav_Y = 0
     
     FilePath = ""
     SetSaveState False
@@ -176,6 +173,9 @@ Function LoadWaveDef(fn As String)
         SetSaveState True
     Close #1
     
+    Nav_X = 0
+    Nav_Y = 0
+    
     ReSizeGLScene
     Redraw
     
@@ -202,32 +202,16 @@ End Sub
 
 Private Sub Form_Resize()
     If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
-        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 4
+        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 16
         Text1.Width = MainFrm.ScaleWidth - 8
         Picture1.Width = MainFrm.ScaleWidth
-        Picture1.Height = MainFrm.ScaleHeight - Text1.Height - 8
+        Picture1.Height = Text1.Top - 4
         ReSizeGLScene
     End If
 End Sub
 
 Private Sub Form_Unload(Cancel As Integer)
     KillGLWindow
-End Sub
-
-Private Sub Image1_DblClick()
-
-End Sub
-
-Private Sub Image1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
-
-End Sub
-
-Private Sub Image1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
-
-End Sub
-
-Private Sub Image1_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
-
 End Sub
 
 Private Sub menu_about_Click()
@@ -298,7 +282,6 @@ Private Sub menu_settings_Click()
     SettingsFrm.Show 1
 End Sub
 
-
 Private Sub Picture1_DblClick()
     Nav_X = 0
     Nav_Y = 0
@@ -306,6 +289,8 @@ Private Sub Picture1_DblClick()
 End Sub
 
 Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dim SnapC As Integer
+    
     If Button = 1 Then
         Dragging = True
         PrevNav_X = Nav_X
@@ -314,19 +299,34 @@ Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single,
         Drag_Y = Y
         Picture1.MousePointer = vbSizeAll
     ElseIf Button = 2 Then
+        SnapC = Spacing * 15
+        Meas_X = (((X - Nav_X - XMargin + 8) \ SnapC) * SnapC) + XMargin
+        Meas_Y = (((Y - Nav_Y - YMargin + 2) \ 20) * 20) + YMargin + 8
         Measuring = True
     End If
 End Sub
 
 Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dim SnapC As Integer
     Dim c As Integer
     Dim PopupFlag As Boolean
     Dim PLX, PLY As Single
+    Dim New_X, New_Y As Integer
     
     If Dragging = True Then
         Nav_X = PrevNav_X - (Drag_X - X)
         Nav_Y = PrevNav_Y - (Drag_Y - Y)
         Display
+    ElseIf Measuring = True Then
+        SnapC = Spacing * 15
+        New_X = (((X - Nav_X - XMargin + 8) \ SnapC) * SnapC) + XMargin
+        New_Y = (((Y - Nav_Y - YMargin + 2) \ 20) * 20) + YMargin + 8
+        If (New_X <> Cur_X) Or (New_Y <> Cur_Y) Then
+            Cur_X = New_X
+            Cur_Y = New_Y
+            Label1.Caption = "Measure: " & Int(Abs(Meas_X - Cur_X) \ (Spacing * 15))
+            Display
+        End If
     ElseIf Keys(18) = False Then
         PopupFlag = False
         For c = 0 To nPins - 1
@@ -352,8 +352,11 @@ Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single,
 End Sub
 
 Private Sub Picture1_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dragging = False
-    If Button = 2 Then Measuring = False
+    If Button = 1 Then
+        Dragging = False
+    ElseIf Button = 2 Then
+        Measuring = False
+    End If
     Picture1.MousePointer = vbCrosshair
     Display
 End Sub
