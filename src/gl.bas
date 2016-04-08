@@ -1,14 +1,19 @@
 Attribute VB_Name = "GLMd"
 
-Public Sub ReSizeGLScene(ByVal Width As GLsizei, ByVal Height As GLsizei)
+Public Sub ReSizeGLScene()
+    Dim Height, Width As Integer
+    
+    Width = MainFrm.Picture1.ScaleWidth
+    Height = MainFrm.Picture1.ScaleHeight
+    
     If Height = 0 Then Height = 1
     If Width = 0 Then Width = 1
     
-    glViewport 0, 152, Width, Height - 152
+    glViewport 0, 0, Width, Height
     glMatrixMode mmProjection
     glLoadIdentity
 
-    glOrtho 0#, Width, Height - 150, 0#, -1, 1
+    glOrtho 0#, Width, Height, 0#, -1, 1
 
     glMatrixMode mmModelView
     glLoadIdentity
@@ -38,6 +43,9 @@ End Sub
 Public Function CreateGLWindow(Width As Integer, Height As Integer, Bits As Integer) As Boolean
     Dim PixelFormat As GLuint
     Dim pfd As PIXELFORMATDESCRIPTOR
+    Dim CanvasDc As Long
+    
+    CanvasDc = MainFrm.Picture1.hDC
 
     pfd.cColorBits = Bits
     pfd.cDepthBits = 16
@@ -47,27 +55,27 @@ Public Function CreateGLWindow(Width As Integer, Height As Integer, Bits As Inte
     pfd.nSize = Len(pfd)
     pfd.nVersion = 1
     
-    PixelFormat = ChoosePixelFormat(GetDC(MainFrm.hWnd), pfd)
+    PixelFormat = ChoosePixelFormat(CanvasDc, pfd)
     If PixelFormat = 0 Then
         KillGLWindow
         MsgBox "Can't Find A Suitable PixelFormat.", vbExclamation, "ERROR"
         CreateGLWindow = False
     End If
 
-    If SetPixelFormat(GetDC(MainFrm.hWnd), PixelFormat, pfd) = 0 Then
+    If SetPixelFormat(CanvasDc, PixelFormat, pfd) = 0 Then
         KillGLWindow
         MsgBox "Can't Set The PixelFormat.", vbExclamation, "ERROR"
         CreateGLWindow = False
     End If
     
-    hrc = wglCreateContext(GetDC(MainFrm.hWnd))
+    hrc = wglCreateContext(CanvasDc)
     If (hrc = 0) Then
         KillGLWindow
         MsgBox "Can't Create A GL Rendering Context.", vbExclamation, "ERROR"
         CreateGLWindow = False
     End If
 
-    If wglMakeCurrent(GetDC(MainFrm.hWnd), hrc) = 0 Then
+    If wglMakeCurrent(CanvasDc, hrc) = 0 Then
         KillGLWindow
         MsgBox "Can't Activate The GL Rendering Context.", vbExclamation, "ERROR"
         CreateGLWindow = False

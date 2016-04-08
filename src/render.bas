@@ -120,6 +120,7 @@ Sub RenderText(Txt As String, Xofs As Integer, YOfs As Integer, Coef As Single)
     
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     glEnable glcTexture2D
+    If ColorScheme = 1 Then glTexEnvi tetTextureEnv, tenTextureEnvMode, GL_ADD
     glBindTexture glTexture2D, FontTex
     
     glTranslatef Xofs, YOfs, 0
@@ -132,6 +133,7 @@ Sub RenderText(Txt As String, Xofs As Integer, YOfs As Integer, Coef As Single)
     Next c
     
     glDisable glcTexture2D
+    glTexEnvi tetTextureEnv, tenTextureEnvMode, GL_MODULATE
     
     glPopMatrix
     

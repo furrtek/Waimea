@@ -74,6 +74,7 @@ Public LiveRefresh As Boolean
 Public AltBubbles As Boolean
 Public OpenLast As Boolean
 Public GroupAlpha As Integer
+Public TicksAlpha As Integer
 Public ColorScheme As Integer
 Public AntiAliasing As Boolean
 Public LastOpened As String
@@ -127,11 +128,13 @@ Public Sub Display()
     
     glCallList EverythingDL
     
-    SwapBuffers MainFrm.hDC
+    SwapBuffers MainFrm.Picture1.hDC
 End Sub
 
 Public Sub UpdateDisplay()
-    Dim w As Integer
+
+
+Dim w As Integer
     Dim PinTextLen As Integer
     
     If Loaded = False Then Exit Sub
@@ -314,7 +317,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
         ' Go back up the groupstack to see what was the last started group
         For c = GIdxAdd - 1 To 0 Step -1
             If GroupStack(c).Stop = -1 Then
-                GroupStack(c).Stop = (w * 20) - 4
+                GroupStack(c).Stop = (w * 20) - 2
                 GLevel = GLevel - 1
                 Exit For
             End If
@@ -364,7 +367,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
                     DAlpha = 31
                 End If
             Else
-                DataColor = 0
+                DataColor = -1
                 DAlpha = 127
             End If
             

@@ -2,7 +2,7 @@ VERSION 5.00
 Begin VB.Form SettingsFrm 
    BorderStyle     =   1  'Fixed Single
    Caption         =   "Settings"
-   ClientHeight    =   2790
+   ClientHeight    =   3540
    ClientLeft      =   45
    ClientTop       =   330
    ClientWidth     =   4680
@@ -10,15 +10,25 @@ Begin VB.Form SettingsFrm
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   2790
+   ScaleHeight     =   3540
    ScaleWidth      =   4680
    StartUpPosition =   2  'CenterScreen
+   Begin VB.HScrollBar HScroll3 
+      Height          =   255
+      LargeChange     =   10
+      Left            =   120
+      Max             =   127
+      TabIndex        =   11
+      Top             =   1560
+      Value           =   5
+      Width           =   4455
+   End
    Begin VB.CheckBox Check4 
       Caption         =   "Anti-aliasing"
       Height          =   255
       Left            =   2760
       TabIndex        =   10
-      Top             =   1680
+      Top             =   2400
       Width           =   1335
    End
    Begin VB.ComboBox Combo1 
@@ -28,7 +38,7 @@ Begin VB.Form SettingsFrm
       List            =   "settings.frx":0E4C
       TabIndex        =   9
       Text            =   "Color scheme"
-      Top             =   1320
+      Top             =   2040
       Width           =   1815
    End
    Begin VB.HScrollBar HScroll2 
@@ -47,7 +57,7 @@ Begin VB.Form SettingsFrm
       Height          =   255
       Left            =   120
       TabIndex        =   6
-      Top             =   1800
+      Top             =   2520
       Width           =   1935
    End
    Begin VB.CheckBox Check2 
@@ -55,7 +65,7 @@ Begin VB.Form SettingsFrm
       Height          =   255
       Left            =   120
       TabIndex        =   5
-      Top             =   1560
+      Top             =   2280
       Width           =   1935
    End
    Begin VB.CommandButton Command2 
@@ -63,7 +73,7 @@ Begin VB.Form SettingsFrm
       Height          =   495
       Left            =   1680
       TabIndex        =   1
-      Top             =   2160
+      Top             =   2880
       Width           =   1335
    End
    Begin VB.CommandButton Command1 
@@ -71,7 +81,7 @@ Begin VB.Form SettingsFrm
       Height          =   495
       Left            =   3120
       TabIndex        =   0
-      Top             =   2160
+      Top             =   2880
       Width           =   1335
    End
    Begin VB.CheckBox Check1 
@@ -79,7 +89,7 @@ Begin VB.Form SettingsFrm
       Height          =   255
       Left            =   120
       TabIndex        =   3
-      Top             =   1320
+      Top             =   2040
       Width           =   1215
    End
    Begin VB.HScrollBar HScroll1 
@@ -92,6 +102,14 @@ Begin VB.Form SettingsFrm
       Top             =   360
       Value           =   1
       Width           =   4455
+   End
+   Begin VB.Label Label3 
+      Caption         =   "Ticks opacity:"
+      Height          =   255
+      Left            =   120
+      TabIndex        =   12
+      Top             =   1320
+      Width           =   1455
    End
    Begin VB.Label Label2 
       Caption         =   "Groups opacity:"
@@ -117,6 +135,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Dim LocalSpacing As Single
 Dim LocalGroupAlpha As Integer
+Dim LocalTicksAlpha As Integer
 Dim NeedRefresh As Boolean
 
 Private Sub Check4_Click()
@@ -146,6 +165,12 @@ Private Sub Command1_Click()
         NeedRefresh = True
     End If
     
+    If LocalTicksAlpha <> TicksAlpha Then
+        TicksAlpha = LocalTicksAlpha
+        LoadColorScheme
+        NeedRefresh = True
+    End If
+
     If NeedRefresh = True Then Redraw
     
     SaveSettings
@@ -167,11 +192,13 @@ Private Sub Form_Activate()
     
     LocalSpacing = Spacing
     LocalGroupAlpha = GroupAlpha
+    LocalTicksAlpha = TicksAlpha
     
     Combo1.ListIndex = ColorScheme
     
     HScroll1.Value = LocalSpacing * 10
     HScroll2.Value = LocalGroupAlpha
+    HScroll3.Value = LocalTicksAlpha
 End Sub
 
 Private Sub HScroll1_Change()
@@ -182,4 +209,9 @@ End Sub
 Private Sub HScroll2_Change()
     LocalGroupAlpha = HScroll2.Value
     Label2.Caption = "Groups opacity: " & LocalGroupAlpha
+End Sub
+
+Private Sub HScroll3_Change()
+    LocalTicksAlpha = HScroll3.Value
+    Label3.Caption = "Ticks opacity: " & LocalTicksAlpha
 End Sub

@@ -10,6 +10,7 @@ Sub LoadSettings()
     AltBubbles = True
     OpenLast = True
     GroupAlpha = 31
+    TicksAlpha = 15
     ColorScheme = 0     ' "Default"
     AntiAliasing = True
     
@@ -29,6 +30,7 @@ Sub LoadSettings()
                     If Setting(0) = "openlast" Then OpenLast = S2B(Setting(1))
                     If Setting(0) = "lastopened" Then LastOpened = Setting(1)
                     If Setting(0) = "groupalpha" Then GroupAlpha = Val(Setting(1))
+                    If Setting(0) = "ticksalpha" Then TicksAlpha = Val(Setting(1))
                     If Setting(0) = "colorscheme" Then ColorScheme = Val(Setting(1))
                     If Setting(0) = "antialiasing" Then AntiAliasing = S2B(Setting(1))
                 End If
@@ -58,6 +60,8 @@ Sub SaveSettings()
         ln = "lastopened=" & FilePath
         Print #1, ln
         ln = "groupalpha=" & GroupAlpha
+        Print #1, ln
+        ln = "ticksalpha=" & TicksAlpha
         Print #1, ln
         ln = "colorscheme=" & ColorScheme
         Print #1, ln

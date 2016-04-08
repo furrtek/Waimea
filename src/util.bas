@@ -13,13 +13,13 @@ End Sub
 Sub LoadColorScheme()
     If ColorScheme = 0 Then
         ' Default
-        InitColor Color_Ticks, 0, 0, 0, 31
+        InitColor Color_Ticks, 0, 0, 0, CByte(TicksAlpha)
         InitColor Color_Names, 0, 0, 0, 127
         InitColor Color_Waves, 0, 0, 0, 127
         InitColor Color_Background, 127, 127, 127, 127
     ElseIf ColorScheme = 1 Then
         ' Inverted
-        InitColor Color_Ticks, 127, 127, 127, 31
+        InitColor Color_Ticks, 127, 127, 127, CByte(TicksAlpha)
         InitColor Color_Names, 127, 127, 127, 127
         InitColor Color_Waves, 127, 127, 127, 127
         InitColor Color_Background, 0, 0, 0, 127
@@ -49,7 +49,7 @@ End Function
 
 Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     If DataColor = 0 Then
-        glColor4b 0, 0, 0, Alpha  ' Black
+        glColor4b 91, 91, 91, Alpha  ' Grey (neutral)
     ElseIf DataColor = 1 Then
         glColor4b 127, 0, 0, Alpha  ' Red
     ElseIf DataColor = 2 Then
@@ -65,7 +65,7 @@ Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     ElseIf DataColor = 7 Then
         glColor4b 100, 100, 100, Alpha  ' Grey
     Else
-        glColor4b 63, 63, 63, Alpha  ' Grey (neutral)
+        SetGLColor Color_Waves
     End If
 End Sub
 
