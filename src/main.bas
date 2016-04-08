@@ -117,6 +117,11 @@ Public Keys(255) As Boolean
 Private hrc As Long
 
 Public Sub Display()
+    Dim Nt As Integer
+    Dim NtX As Integer
+    Dim NtY As Integer
+    Dim Ntxt As String
+    
     glClearColor Color_Background.Red / 127, Color_Background.Green / 127, Color_Background.Blue / 127, 1
     glClear clrColorBufferBit Or clrDepthBufferBit
     
@@ -138,11 +143,27 @@ Public Sub Display()
     glPopMatrix
     
     If Measuring = True Then
-        SetGLColor Color_Names
+        SetDataColor 2, 127
+        glBegin bmLines
+            glVertex2f Meas_X, Meas_Y - 8
+            glVertex2f Meas_X, Meas_Y + 8
+        glEnd
         glBegin bmLines
             glVertex2f Meas_X, Meas_Y
             glVertex2f Cur_X, Cur_Y
         glEnd
+        glBegin bmLines
+            glVertex2f Cur_X, Cur_Y - 8
+            glVertex2f Cur_X, Cur_Y + 8
+        glEnd
+        
+        SetDataColor 1, 127
+        Nt = Int(Abs(Meas_X - Cur_X) \ (Spacing * 15))
+        Ntxt = Nt & " ticks (" & Round(Nt / 2, 1) & ")"
+        NtX = (Meas_X + Cur_X) / 2
+        NtX = NtX - Len(Ntxt) * 7 / 2
+        NtY = (Meas_Y + Cur_Y) / 2
+        RenderText Ntxt, NtX, NtY, 0.9
     End If
     
     SwapBuffers MainFrm.Picture1.hDC
@@ -322,7 +343,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
         If UBound(DF) >= 1 Then
             With GroupStack(GIdxAdd)
                 .Level = GLevel
-                .Start = (w * 20) - 4
+                .Start = (w * 20) - 3
                 .Txt = DF(0)
                 .Color = Val(DF(1))
                 .Stop = -1

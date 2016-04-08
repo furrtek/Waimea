@@ -47,19 +47,9 @@ Begin VB.Form MainFrm
       ScaleHeight     =   192
       ScaleMode       =   3  'Pixel
       ScaleWidth      =   792
-      TabIndex        =   2
+      TabIndex        =   1
       Top             =   0
       Width           =   11880
-   End
-   Begin VB.Label Label1 
-      BackStyle       =   0  'Transparent
-      Caption         =   "Measure:"
-      ForeColor       =   &H00000000&
-      Height          =   255
-      Left            =   60
-      TabIndex        =   1
-      Top             =   5220
-      Width           =   1455
    End
    Begin VB.Menu menu_sheet 
       Caption         =   "Sheet"
@@ -202,7 +192,7 @@ End Sub
 
 Private Sub Form_Resize()
     If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
-        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 16
+        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 4
         Text1.Width = MainFrm.ScaleWidth - 8
         Picture1.Width = MainFrm.ScaleWidth
         Picture1.Height = Text1.Top - 4
@@ -324,7 +314,6 @@ Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single,
         If (New_X <> Cur_X) Or (New_Y <> Cur_Y) Then
             Cur_X = New_X
             Cur_Y = New_Y
-            Label1.Caption = "Measure: " & Int(Abs(Meas_X - Cur_X) \ (Spacing * 15))
             Display
         End If
     ElseIf Keys(18) = False Then
