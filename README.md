@@ -21,21 +21,23 @@ Also: No install, no registry keys.
 * Fast and clean OpenGL rendering
 * Drag-scroll for large chronograms
 * Rulers
-* Modifiable layout/appearence (not as flexible as Wavedrom)
+* Time measurements
 * Popup notes (pins)
+* Modifiable layout/appearence (not as flexible as Wavedrom)
 * To come: Export to image (and svg ?)
 
 ## Usage ##
 
 * Holding Alt shows all popup notes (if enabled)
-* Right click reset view to origin
+* Right click and drag to measure time
+* Double left click to reset view to origin
 
 # Syntax
 
 A wave name starts with `name:` and a string.
 
 A wave definition starts with `wave:`:
-* `.` (dot): Repeat last block
+* `.` (dot): Repeat last block (except for `H` and `L`, they become `h` and l`)
 * `z` : Hi-Z
 * `x` : Undefined
 * `l` : Low
@@ -64,12 +66,13 @@ The drawing commands follow on the next line. The currently supported commands a
 * `L`: Line. Simply draws a line. Takes x1,y1:x2,y2.
 * `LS`: Line strip. Draws multiples lines, one connected to the other. Takes x1,y1:x2,y2:x3,y3...
 * `SH`: Shape. Draws a filled polygon. Takes x1,y1:x2,y2:x3,y3...
+* `LC`: Reset color to line color. Useful for colored blocks (data).
 
-Coordinates 0,0 are top-left.
+Coordinates 0,0 are top-left. Sizes should be normalized to 16x16.
 
 For example, drawing a filled square clockwise: `SH 0,0:16,0:16,16:0,16`
 
 # known bugs
 
 * Might crash on badly formatted layout.txt file.
-* Drag-scroll not well optimized, can be slow on some setups. Will have to draw in a buffer and scroll the buffer instead of redrawing everything each time.
+* Drag-scroll not well optimized, can be laggy on some setups. Will have to draw in a buffer and scroll the buffer instead of redrawing everything each time.
