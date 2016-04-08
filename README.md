@@ -1,6 +1,8 @@
 # Waimea
 Compact standalone chronogram editor for Windows using OpenGL, written in good ol' VB6. Inspired by [Wavedrom](https://github.com/drom/wavedrom/).
 
+Download v0.20 [HERE](binaries/waimea020.zip).
+
 ![Waimea screenshot](screenshot4.png)
 
 Why VB6 ?
