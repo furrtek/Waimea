@@ -279,7 +279,7 @@ Private Sub Picture1_DblClick()
 End Sub
 
 Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dim SnapC As Integer
+    Dim SnapC As Single
     
     If Button = 1 Then
         Dragging = True
@@ -288,16 +288,16 @@ Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single,
         Drag_X = X
         Drag_Y = Y
         Picture1.MousePointer = vbSizeAll
-    ElseIf Button = 2 Then
+    ElseIf Button = 2 And X > (XMargin * Spacing) Then
         SnapC = Spacing * 15
-        Meas_X = (((X - Nav_X - XMargin + 8) \ SnapC) * SnapC) + XMargin
-        Meas_Y = (((Y - Nav_Y - YMargin + 2) \ 20) * 20) + YMargin + 8
+        Meas_X = (((X - Nav_X - (XMargin * Spacing) + 8) \ SnapC) * SnapC) + (XMargin * Spacing)
+        Meas_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + (YMargin * Spacing) + 8
         Measuring = True
     End If
 End Sub
 
 Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Dim SnapC As Integer
+    Dim SnapC As Single
     Dim c As Integer
     Dim PopupFlag As Boolean
     Dim PLX, PLY As Single
@@ -309,8 +309,8 @@ Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single,
         Display
     ElseIf Measuring = True Then
         SnapC = Spacing * 15
-        New_X = (((X - Nav_X - XMargin + 8) \ SnapC) * SnapC) + XMargin
-        New_Y = (((Y - Nav_Y - YMargin + 2) \ 20) * 20) + YMargin + 8
+        New_X = (((X - Nav_X - (XMargin * Spacing) + 8) \ SnapC) * SnapC) + (XMargin * Spacing)
+        New_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + (YMargin * Spacing) + 8
         If (New_X <> Cur_X) Or (New_Y <> Cur_Y) Then
             Cur_X = New_X
             Cur_Y = New_Y
