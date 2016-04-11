@@ -319,8 +319,19 @@ Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single,
     Dim New_X, New_Y As Integer
     
     If Dragging = True Then
-        Nav_X = PrevNav_X - (Drag_X - X)
-        Nav_Y = PrevNav_Y - (Drag_Y - Y)
+        New_X = PrevNav_X - (Drag_X - X)
+        If New_X <= 0 Then
+            Nav_X = New_X
+        Else
+            Nav_X = 0
+        End If
+        New_Y = PrevNav_Y - (Drag_Y - Y)
+        If New_Y <= 0 Then
+            Nav_Y = New_Y
+        Else
+            Nav_Y = 0
+        End If
+
         Display
     ElseIf Measuring = True Then
         SnapC = Spacing * 15

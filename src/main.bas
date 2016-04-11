@@ -77,6 +77,7 @@ Public OpenLast As Boolean
 Public GroupAlpha As Integer
 Public TicksAlpha As Integer
 Public ColorScheme As Integer
+Public ColorSat As Integer
 Public AntiAliasing As Boolean
 Public LastOpened As String
 
@@ -148,15 +149,27 @@ Public Sub Display()
     Else
         glTranslatef 0, Nav_Y, 0
     End If
-    glBegin bmQuads
-        glColor4b 0, 0, 0, 7
-        glVertex2f 0, 0
-        glColor4b 0, 0, 0, 63
-        glVertex2f XMargin, 0
-        glVertex2f XMargin, MaxHeight
-        glColor4b 0, 0, 0, 7
-        glVertex2f 0, MaxHeight
-    glEnd
+    If ColorScheme = 0 Then
+        glBegin bmQuads
+            glColor4b 127, 127, 127, 7
+            glVertex2f 0, 0
+            glColor4b 127, 127, 127, 63
+            glVertex2f XMargin, 0
+            glVertex2f XMargin, MaxHeight
+            glColor4b 127, 127, 127, 7
+            glVertex2f 0, MaxHeight
+        glEnd
+    Else
+        glBegin bmQuads
+            glColor4b 0, 0, 0, 7
+            glVertex2f 0, 0
+            glColor4b 0, 0, 0, 63
+            glVertex2f XMargin, 0
+            glVertex2f XMargin, MaxHeight
+            glColor4b 0, 0, 0, 7
+            glVertex2f 0, MaxHeight
+        glEnd
+    End If
     glCallList NamesDL
     
     glPopMatrix
@@ -270,7 +283,7 @@ Public Sub UpdateDisplay()
             glPushMatrix
             PinTextLen = Len(PinList(w).Txt) * 8 + 16
             glTranslatef PinList(w).X + 8, PinList(w).Y + 10, 0
-            glColor4b 120, 120, 120, 90
+            SetGLColor Color_Background
             glBegin bmPolygon
                 glVertex2f 0, 0
                 glVertex2f 8, -8

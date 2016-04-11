@@ -3,26 +3,37 @@ Sub SetGLColor(Color As TGLByteColor)
     glColor4b Color.Red, Color.Green, Color.Blue, Color.Alpha
 End Sub
 
-Sub InitColor(Color As TGLByteColor, Red As Byte, Green As Byte, Blue As Byte, Alpha As Byte)
-    Color.Red = Red
-    Color.Green = Green
-    Color.Blue = Blue
+Sub InitColor(Color As TGLByteColor, Red As Byte, Green As Byte, Blue As Byte, Alpha As Byte, ApplySat As Boolean)
+    If ApplySat = True Then
+        Color.Red = Saturate(Red, ColorSat)
+        Color.Green = Saturate(Green, ColorSat)
+        Color.Blue = Saturate(Blue, ColorSat)
+    Else
+        Color.Red = Red
+        Color.Green = Green
+        Color.Blue = Blue
+    End If
     Color.Alpha = Alpha
 End Sub
+
+Function Saturate(ByVal Inp As Single, ByVal Sat As Single) As Integer
+    Sat = Sat * 1.27    ' 100 to 127
+    Saturate = ((Inp - 63) * Sat / 128) + 63
+End Function
 
 Sub LoadColorScheme()
     If ColorScheme = 0 Then
         ' Default
-        InitColor Color_Ticks, 0, 0, 0, CByte(TicksAlpha)
-        InitColor Color_Names, 0, 0, 0, 127
-        InitColor Color_Waves, 0, 0, 0, 127
-        InitColor Color_Background, 127, 127, 127, 127
+        InitColor Color_Ticks, 0, 0, 0, CByte(TicksAlpha), False
+        InitColor Color_Names, 0, 0, 0, 127, False
+        InitColor Color_Waves, 0, 0, 0, 127, False
+        InitColor Color_Background, 127, 127, 127, 127, False
     ElseIf ColorScheme = 1 Then
         ' Inverted
-        InitColor Color_Ticks, 127, 127, 127, CByte(TicksAlpha)
-        InitColor Color_Names, 127, 127, 127, 127
-        InitColor Color_Waves, 127, 127, 127, 127
-        InitColor Color_Background, 0, 0, 0, 127
+        InitColor Color_Ticks, 127, 127, 127, CByte(TicksAlpha), False
+        InitColor Color_Names, 127, 127, 127, 127, False
+        InitColor Color_Waves, 127, 127, 127, 127, False
+        InitColor Color_Background, 0, 0, 0, 127, False
     End If
 End Sub
 
@@ -48,22 +59,28 @@ Function GetFileName(fn As String)
 End Function
 
 Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
+    Dim SatC As Integer
+    Dim SatZ As Integer
+    
+    SatC = Saturate(127, ColorSat)
+    SatZ = Saturate(0, ColorSat)
+    
     If DataColor = 0 Then
-        glColor4b 91, 91, 91, Alpha     ' Grey (neutral)
+        glColor4b SatC, SatC, SatC, Alpha       ' Grey (neutral)
     ElseIf DataColor = 1 Then
-        glColor4b 127, 63, 63, Alpha    ' Red
+        glColor4b SatC, SatZ, SatZ, Alpha       ' Red
     ElseIf DataColor = 2 Then
-        glColor4b 63, 127, 63, Alpha    ' Green
+        glColor4b SatZ, SatC, SatZ, Alpha       ' Green
     ElseIf DataColor = 3 Then
-        glColor4b 63, 63, 127, Alpha    ' Blue
+        glColor4b SatZ, SatZ, SatC, Alpha       ' Blue
     ElseIf DataColor = 4 Then
-        glColor4b 127, 127, 63, Alpha   ' Yellow
+        glColor4b SatC, SatC, SatZ, Alpha       ' Yellow
     ElseIf DataColor = 5 Then
-        glColor4b 63, 127, 127, Alpha   ' Cyan
+        glColor4b SatZ, SatC, SatC, Alpha       ' Cyan
     ElseIf DataColor = 6 Then
-        glColor4b 63, 63, 127, Alpha    ' Purple
+        glColor4b SatZ, SatZ, SatC, Alpha       ' Purple
     ElseIf DataColor = 7 Then
-        glColor4b 100, 100, 100, Alpha  ' Grey
+        glColor4b SatC, SatC, SatC, Alpha       ' Grey
     Else
         SetGLColor Color_Waves
     End If

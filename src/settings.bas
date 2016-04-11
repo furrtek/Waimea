@@ -12,6 +12,7 @@ Sub LoadSettings()
     GroupAlpha = 31
     TicksAlpha = 15
     ColorScheme = 0     ' "Default"
+    ColorSat = 50
     AntiAliasing = True
     
     fn = App.Path & "\settings.ini"
@@ -35,6 +36,8 @@ Sub LoadSettings()
                     If Setting(0) = "ticksalpha" Then TicksAlpha = Val(Setting(1))
                     If Setting(0) = "colorscheme" Then ColorScheme = Val(Setting(1))
                     If ColorScheme > 1 Then ColorScheme = 0
+                    If Setting(0) = "colorsat" Then ColorSat = Val(Setting(1))
+                    If (ColorSat < 10) Or (ColorSat > 100) Then ColorSat = 50
                     If Setting(0) = "antialiasing" Then AntiAliasing = S2B(Setting(1))
                 End If
             Loop While Not EOF(1)
@@ -67,6 +70,8 @@ Sub SaveSettings()
         ln = "ticksalpha=" & TicksAlpha
         Print #1, ln
         ln = "colorscheme=" & ColorScheme
+        Print #1, ln
+        ln = "colorsat=" & ColorSat
         Print #1, ln
         ln = "antialiasing=" & B2S(AntiAliasing)
         Print #1, ln
