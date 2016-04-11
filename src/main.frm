@@ -2,13 +2,13 @@ VERSION 5.00
 Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
 Begin VB.Form MainFrm 
    Caption         =   "Waimea"
-   ClientHeight    =   5445
+   ClientHeight    =   5550
    ClientLeft      =   60
    ClientTop       =   630
    ClientWidth     =   11895
    Icon            =   "main.frx":0000
    LinkTopic       =   "Form1"
-   ScaleHeight     =   363
+   ScaleHeight     =   370
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   793
    StartUpPosition =   2  'CenterScreen
@@ -31,7 +31,7 @@ Begin VB.Form MainFrm
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   2205
+      Height          =   2445
       Left            =   60
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
@@ -48,8 +48,15 @@ Begin VB.Form MainFrm
       ScaleMode       =   3  'Pixel
       ScaleWidth      =   792
       TabIndex        =   1
+      TabStop         =   0   'False
       Top             =   0
       Width           =   11880
+      Begin VB.Timer Timer1 
+         Enabled         =   0   'False
+         Interval        =   100
+         Left            =   720
+         Top             =   120
+      End
    End
    Begin VB.Menu menu_sheet 
       Caption         =   "Sheet"
@@ -105,12 +112,14 @@ Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
 
+Dim RefreshTimer As Integer
+
 Private Sub Form_Activate()
     Dim w As Integer
     
     Set FSO = New FileSystemObject
     
-    XMargin = 64
+    XMargin = 100
     YMargin = 20
     
     FilePath = ""
@@ -406,7 +415,20 @@ Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
         Next w
         Redraw
     ElseIf KeyCode < 112 Or KeyCode > 123 Then
-        If LiveRefresh = True Then Redraw
+        If LiveRefresh = True Then ResetRT
     End If
 End Sub
 
+Sub ResetRT()
+    RefreshTimer = 4
+    Timer1.Enabled = True
+End Sub
+
+Private Sub Timer1_Timer()
+    If RefreshTimer = 0 Then
+        Timer1.Enabled = False
+        Redraw
+    Else
+        RefreshTimer = RefreshTimer - 1
+    End If
+End Sub

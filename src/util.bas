@@ -49,19 +49,19 @@ End Function
 
 Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     If DataColor = 0 Then
-        glColor4b 91, 91, 91, Alpha  ' Grey (neutral)
+        glColor4b 91, 91, 91, Alpha     ' Grey (neutral)
     ElseIf DataColor = 1 Then
-        glColor4b 127, 0, 0, Alpha  ' Red
+        glColor4b 127, 63, 63, Alpha    ' Red
     ElseIf DataColor = 2 Then
-        glColor4b 0, 127, 0, Alpha  ' Green
+        glColor4b 63, 127, 63, Alpha    ' Green
     ElseIf DataColor = 3 Then
-        glColor4b 0, 0, 127, Alpha  ' Blue
+        glColor4b 63, 63, 127, Alpha    ' Blue
     ElseIf DataColor = 4 Then
-        glColor4b 127, 127, 0, Alpha    ' Yellow
+        glColor4b 127, 127, 63, Alpha   ' Yellow
     ElseIf DataColor = 5 Then
-        glColor4b 0, 127, 127, Alpha    ' Cyan
+        glColor4b 63, 127, 127, Alpha   ' Cyan
     ElseIf DataColor = 6 Then
-        glColor4b 63, 0, 127, Alpha     ' Purple
+        glColor4b 63, 63, 127, Alpha    ' Purple
     ElseIf DataColor = 7 Then
         glColor4b 100, 100, 100, Alpha  ' Grey
     Else

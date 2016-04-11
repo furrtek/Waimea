@@ -103,6 +103,7 @@ Public TicksDL As GLuint
 Public Waves(256) As TWave    ' Blocks
 Public CharDL(128) As GLuint    ' Characters
 Public DispLists(256) As WDispList  ' For blocks
+Public NamesDL As GLuint
 
 Public FilePath As String
 
@@ -136,11 +137,26 @@ Public Sub Display()
     glMatrixMode mmModelView
     glLoadIdentity
     glTranslatef Nav_X, Nav_Y, 0#
-    glPushMatrix
     
     glCallList EverythingDL
     
-    glPopMatrix
+    ' Draw names
+    glLoadIdentity
+    If Nav_X > 0 Then
+        glTranslatef Nav_X, Nav_Y, 0
+    Else
+        glTranslatef 0, Nav_Y, 0
+    End If
+    glBegin bmQuads
+        glColor4b 0, 0, 0, 7
+        glVertex2f 0, 0
+        glColor4b 0, 0, 0, 63
+        glVertex2f XMargin, 0
+        glVertex2f XMargin, MaxHeight
+        glColor4b 0, 0, 0, 7
+        glVertex2f 0, MaxHeight
+    glEnd
+    glCallList NamesDL
     
     If Measuring = True Then
         SetDataColor 2, 127
@@ -170,9 +186,7 @@ Public Sub Display()
 End Sub
 
 Public Sub UpdateDisplay()
-
-
-Dim w As Integer
+    Dim w As Integer
     Dim PinTextLen As Integer
     
     If Loaded = False Then Exit Sub
@@ -332,7 +346,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
     If FieldType = "ruler" Then
         RenderRuler FieldData
     ElseIf FieldType = "name" Then
-        RenderName FieldData
+        WaveName = FieldData
         UsedWave = True
     ElseIf FieldType = "data" Then
         RenderData FieldData

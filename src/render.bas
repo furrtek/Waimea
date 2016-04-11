@@ -63,6 +63,9 @@ Public Sub Render()
     
     MaxWidth = MaxWidth + 15
     
+    ' Regen names
+    RenderNames
+    
     ' Regen ticks
     RenderTicks
 End Sub
@@ -97,7 +100,7 @@ Sub RenderPin(FieldData As String, YPos As Integer)
     
     DF = Split(FieldData, ",")
     If UBound(DF) > 1 Then
-        PinList(nPins).X = 15 * DF(0) + XMargin
+        PinList(nPins).X = 15 * Val(DF(0)) + XMargin
         PinList(nPins).Y = YPos - 9
         PinList(nPins).Color = Val(DF(1))
         PinList(nPins).Txt = DF(2)
@@ -105,10 +108,25 @@ Sub RenderPin(FieldData As String, YPos As Integer)
     End If
 End Sub
 
-Sub RenderName(FieldData As String)
-    SetGLColor Color_Names
-    RenderText FieldData, -((Len(FieldData) * 8) - XMargin + 4), 0, 1
-    WaveName = FieldData
+Sub RenderNames()
+    Dim w As Integer
+    Dim WName As String
+    
+    If glIsList(NamesDL) = GL_TRUE Then glDeleteLists NamesDL, 1
+    NamesDL = glGenLists(1)
+    glNewList NamesDL, lstCompile
+        
+        glTranslatef 0, YMargin, 0
+        SetGLColor Color_Names
+        For w = 0 To nWaves - 1
+            If Waves(w).Used = True Then
+                WName = Waves(w).Name
+                RenderText WName, -((Len(WName) * 8) - XMargin + 4), 0, 1
+                glTranslatef 0, 20, 0
+            End If
+        Next w
+    
+    glEndList
 End Sub
 
 Sub RenderText(Txt As String, Xofs As Integer, YOfs As Integer, Coef As Single)
@@ -128,7 +146,7 @@ Sub RenderText(Txt As String, Xofs As Integer, YOfs As Integer, Coef As Single)
     
     For c = 0 To Len(Txt) - 1
         pch = Asc(Mid(Txt, c + 1, 1)) - 32
-        glCallList CharDL(pch)
+        If pch < 128 Then glCallList CharDL(pch)
         glTranslatef 8, 0, 0
     Next c
     
