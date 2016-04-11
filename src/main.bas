@@ -137,6 +137,7 @@ Public Sub Display()
     glMatrixMode mmModelView
     glLoadIdentity
     glTranslatef Nav_X, Nav_Y, 0#
+    glPushMatrix
     
     glCallList EverythingDL
     
@@ -158,6 +159,7 @@ Public Sub Display()
     glEnd
     glCallList NamesDL
     
+    glPopMatrix
     If Measuring = True Then
         SetDataColor 2, 127
         glBegin bmLines

@@ -117,6 +117,8 @@ Dim RefreshTimer As Integer
 Private Sub Form_Activate()
     Dim w As Integer
     
+    If Loaded = True Then Exit Sub
+    
     Set FSO = New FileSystemObject
     
     XMargin = 100
@@ -180,6 +182,10 @@ Function LoadWaveDef(fn As String)
     
     LoadWaveDef = True
 End Function
+
+Private Sub Form_Load()
+    Loaded = False
+End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     Dim Done As Boolean

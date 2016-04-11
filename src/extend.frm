@@ -151,11 +151,11 @@ Private Sub Command1_Click()
                 End If
             Next c
             
-            MainFrm.Text1.Text = ""
+            ToAdd = ""
             For c = 0 To UBound(WaveDefsLn) - 1
-                MainFrm.Text1.Text = MainFrm.Text1.Text & WaveDefsLn(c) & vbCrLf
+                ToAdd = ToAdd & WaveDefsLn(c) & vbCrLf
             Next c
-            MainFrm.Text1.Text = MainFrm.Text1.Text & WaveDefsLn(c)
+            MainFrm.Text1.Text = ToAdd & WaveDefsLn(c)
         End If
     
     End If
