@@ -1,4 +1,5 @@
 Attribute VB_Name = "UtilMd"
+
 Sub SetGLColor(Color As TGLByteColor)
     glColor4b Color.Red, Color.Green, Color.Blue, Color.Alpha
 End Sub
@@ -78,7 +79,7 @@ Public Sub SetDataColor(DataColor As Integer, Alpha As Integer)
     ElseIf DataColor = 5 Then
         glColor4b SatZ, SatC, SatC, Alpha       ' Cyan
     ElseIf DataColor = 6 Then
-        glColor4b SatZ, SatZ, SatC, Alpha       ' Purple
+        glColor4b SatC, SatZ, SatC, Alpha       ' Purple
     ElseIf DataColor = 7 Then
         glColor4b SatC, SatC, SatC, Alpha       ' Grey
     Else

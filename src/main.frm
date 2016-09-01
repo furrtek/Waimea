@@ -259,6 +259,7 @@ Sub SaveFile(Force As Boolean)
     If FilePath = "" Or Force = True Then
         CommonDialog1.DialogTitle = "Save waveform file"
         CommonDialog1.ShowSave
+        FilePath = CommonDialog1.FileName
     Else
         CommonDialog1.FileName = FilePath
     End If
@@ -266,15 +267,17 @@ Sub SaveFile(Force As Boolean)
     fn = CommonDialog1.FileName
     
     If FSO.FileExists(fn) = True Then
-        ln = Text1.Text
-        Open CommonDialog1.FileName For Output As #1
-            If Len(ln) >= 2 Then
-                If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
-            End If
-            Print #1, Text1.Text;
-            SetSaveState True
-        Close #1
+        If MsgBox("Overwrite existing file ?", vbQuestion + vbYesNo) = vbNo Then Exit Sub
     End If
+    
+    ln = Text1.Text
+    Open CommonDialog1.FileName For Output As #1
+        If Len(ln) >= 2 Then
+            If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
+        End If
+        Print #1, Text1.Text;
+        SetSaveState True
+    Close #1
     
 Abort:
 End Sub
@@ -386,10 +389,8 @@ Private Sub Text1_Change()
 End Sub
 
 Sub SetSaveState(v As Boolean)
-    If Saved <> v Then
-        Saved = v
-        SetFormTitle
-    End If
+    If Saved <> v Then Saved = v
+    SetFormTitle
 End Sub
 
 Sub SetFormTitle()
