@@ -14,7 +14,7 @@ Begin VB.Form SettingsFrm
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   312
    StartUpPosition =   2  'CenterScreen
-   Begin VB.PictureBox Picture1 
+   Begin VB.PictureBox Colorbox 
       AutoRedraw      =   -1  'True
       BackColor       =   &H00000000&
       BorderStyle     =   0  'None
@@ -77,20 +77,20 @@ Begin VB.Form SettingsFrm
       Width           =   4455
    End
    Begin VB.CheckBox Check3 
-      Caption         =   "Load last opened file"
+      Caption         =   "Auto-load last opened file"
       Height          =   255
       Left            =   120
       TabIndex        =   6
       Top             =   3120
-      Width           =   1935
+      Width           =   2175
    End
    Begin VB.CheckBox Check2 
-      Caption         =   "Alt shows all pin notes"
+      Caption         =   "ALT shows all pin notes"
       Height          =   255
       Left            =   120
       TabIndex        =   5
       Top             =   2880
-      Width           =   1935
+      Width           =   2175
    End
    Begin VB.CommandButton Command2 
       Caption         =   "Cancel"
@@ -109,22 +109,22 @@ Begin VB.Form SettingsFrm
       Width           =   1335
    End
    Begin VB.CheckBox Check1 
-      Caption         =   "Live refresh"
+      Caption         =   "Auto refresh"
       Height          =   255
       Left            =   120
       TabIndex        =   3
       Top             =   2640
-      Width           =   1215
+      Width           =   2175
    End
    Begin VB.HScrollBar HScroll1 
       Height          =   255
-      LargeChange     =   10
+      LargeChange     =   5
       Left            =   120
-      Max             =   100
-      Min             =   1
+      Max             =   40
+      Min             =   5
       TabIndex        =   2
       Top             =   360
-      Value           =   1
+      Value           =   5
       Width           =   4455
    End
    Begin VB.Label Label4 
@@ -251,9 +251,9 @@ Sub RefreshSat()
     SatC = Saturate(127, LocalColorSat) * 2
     SatBlack = Saturate(0, LocalColorSat) * 2
     
-    Picture1.Line (0, 0)-(63, 16), RGB(SatC, SatBlack, SatBlack), BF
-    Picture1.Line (64, 0)-(127, 16), RGB(SatBlack, SatC, SatBlack), BF
-    Picture1.Line (128, 0)-(191, 16), RGB(SatBlack, SatBlack, SatC), BF
+    Colorbox.Line (0, 0)-(63, 16), RGB(SatC, SatBlack, SatBlack), BF
+    Colorbox.Line (64, 0)-(127, 16), RGB(SatBlack, SatC, SatBlack), BF
+    Colorbox.Line (128, 0)-(191, 16), RGB(SatBlack, SatBlack, SatC), BF
 End Sub
 
 Private Sub HScroll1_Change()

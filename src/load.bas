@@ -20,8 +20,8 @@ Public Sub LoadFont()
     glGenTextures 1, FontTex
     glBindTexture glTexture2D, FontTex
     glTexImage2D glTexture2D, 0, 4, 512, 256, 0, tiRGBA, GL_UNSIGNED_BYTE, FontData(0, 0, 0)
-    glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR     ' Linear Filtering
-    glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR     ' Linear Filtering
+    glTexParameteri glTexture2D, tpnTextureMinFilter, GL_LINEAR     ' Linear filtering
+    glTexParameteri glTexture2D, tpnTextureMagFilter, GL_LINEAR
     
     Erase FontData
 End Sub
@@ -62,7 +62,6 @@ Sub LoadLayout()
     Dim pidx As Integer
     Dim t As String
     Dim DataColor As Integer
-    
     Dim c As Integer
     Dim d As Integer
     

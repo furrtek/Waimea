@@ -1,4 +1,29 @@
 Attribute VB_Name = "UtilMd"
+Public Declare Function MessageBoxIndirect Lib "user32" Alias "MessageBoxIndirectA" (lpMsgBoxParams As MSGBOXPARAMS) As Long
+
+Public Const MB_ABORTRETRYIGNORE = &H2&
+Public Const MB_COMPOSITE = &H2 ' use composite chars
+Public Const MB_OK = &H0&
+Public Const MB_OKCANCEL = &H1&
+Public Const MB_RETRYCANCEL = &H5&
+Public Const MB_TASKMODAL = &H2000&
+Public Const MB_YESNO = &H4&
+Public Const MB_USEGLYPHCHARS = &H4 ' use glyph chars, not ctrl chars
+Public Const MB_YESNOCANCEL = &H3&
+Public Const MB_USERICON = 128
+
+Public Type MSGBOXPARAMS
+    cbSize As Long
+    hwndOwner As Long
+    hInstance As Long
+    lpszText As String
+    lpszCaption As String
+    dwStyle As Long
+    lpszIcon As Long
+    dwContextHelpId As Long
+    lpfnMsgBoxCallback As Long
+    dwLanguageId As Long
+End Type
 
 Sub SetGLColor(Color As TGLByteColor)
     glColor4b Color.Red, Color.Green, Color.Blue, Color.Alpha

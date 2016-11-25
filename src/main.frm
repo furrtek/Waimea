@@ -2,15 +2,15 @@ VERSION 5.00
 Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "comdlg32.ocx"
 Begin VB.Form MainFrm 
    Caption         =   "Waimea"
-   ClientHeight    =   5550
+   ClientHeight    =   6495
    ClientLeft      =   60
    ClientTop       =   630
-   ClientWidth     =   11895
+   ClientWidth     =   13200
    Icon            =   "main.frx":0000
    LinkTopic       =   "Form1"
-   ScaleHeight     =   370
+   ScaleHeight     =   433
    ScaleMode       =   3  'Pixel
-   ScaleWidth      =   793
+   ScaleWidth      =   880
    StartUpPosition =   2  'CenterScreen
    Begin MSComDlg.CommonDialog CommonDialog1 
       Left            =   120
@@ -20,7 +20,7 @@ Begin VB.Form MainFrm
       _Version        =   393216
       Filter          =   "Text files|*.txt"
    End
-   Begin VB.TextBox Text1 
+   Begin VB.TextBox EditBox 
       BorderStyle     =   0  'None
       BeginProperty Font 
          Name            =   "Bitstream Vera Sans Mono"
@@ -31,26 +31,26 @@ Begin VB.Form MainFrm
          Italic          =   0   'False
          Strikethrough   =   0   'False
       EndProperty
-      Height          =   2445
+      Height          =   3405
       Left            =   60
       MultiLine       =   -1  'True
       ScrollBars      =   3  'Both
       TabIndex        =   0
       Top             =   3000
-      Width           =   11775
+      Width           =   13095
    End
-   Begin VB.PictureBox Picture1 
+   Begin VB.PictureBox Vis 
       BackColor       =   &H00C0C0C0&
       BorderStyle     =   0  'None
       Height          =   2880
       Left            =   0
       ScaleHeight     =   192
       ScaleMode       =   3  'Pixel
-      ScaleWidth      =   792
+      ScaleWidth      =   880
       TabIndex        =   1
       TabStop         =   0   'False
       Top             =   0
-      Width           =   11880
+      Width           =   13200
       Begin VB.Timer Timer1 
          Enabled         =   0   'False
          Interval        =   100
@@ -60,6 +60,13 @@ Begin VB.Form MainFrm
    End
    Begin VB.Menu menu_sheet 
       Caption         =   "Sheet"
+      Begin VB.Menu mwnu_new 
+         Caption         =   "New"
+         Shortcut        =   ^N
+      End
+      Begin VB.Menu menu_sep3 
+         Caption         =   "-"
+      End
       Begin VB.Menu menu_open 
          Caption         =   "Open"
          Shortcut        =   ^O
@@ -76,6 +83,7 @@ Begin VB.Form MainFrm
       End
       Begin VB.Menu menu_export 
          Caption         =   "Export"
+         Enabled         =   0   'False
          Shortcut        =   ^E
       End
    End
@@ -105,14 +113,17 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
-Dim JustLoaded As Boolean   ' Not used anymore ?
+'Dim JustLoaded As Boolean   ' Not used anymore ?
 Dim Dragging As Boolean
+Dim LastFn As String       ' Last saved filename
 Dim Drag_X As Integer
 Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
 Dim PrevNav_Y As Integer
+Dim ResizeMode As Boolean   ' Edit box resize mode
+Dim Resizing As Boolean
 
-Dim RefreshTimer As Integer
+Dim RefreshCountdown As Integer
 
 Private Sub Form_Activate()
     Dim w As Integer
@@ -127,7 +138,7 @@ Private Sub Form_Activate()
     FilePath = ""
     SetSaveState False
     
-    If Not CreateGLWindow(640, 480, 16) Then End    ' 24 ?
+    If Not CreateGLWindow(640, 480, 16) Then End
     
     TicksDL = glGenLists(1)
     For w = 0 To 255
@@ -135,6 +146,7 @@ Private Sub Form_Activate()
     Next w
     
     LoadSettings
+    UIResize
     LoadLayout
     LoadFont
     LoadPin
@@ -167,11 +179,12 @@ Function LoadWaveDef(fn As String)
             Line Input #1, ln
             LoadStr = LoadStr & ln & vbCrLf
         Wend
-        JustLoaded = True       ' Not used anymore ?
-        Text1.Text = LoadStr
+        'JustLoaded = True       ' Not used anymore ?
+        EditBox.Text = LoadStr
         DoEvents
         FilePath = fn
         SetSaveState True
+        LastFn = fn
     Close #1
     
     Nav_X = 0
@@ -185,6 +198,38 @@ End Function
 
 Private Sub Form_Load()
     Loaded = False
+End Sub
+
+Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    If ResizeMode = True Then Resizing = True
+End Sub
+
+Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Dim VisHeight As Integer
+    
+    If Resizing = False Then
+        VisHeight = Vis.Height
+        
+        If Y > VisHeight And Y < VisHeight + 4 Then
+            If ResizeMode = False Then
+                MainFrm.MousePointer = vbSizeNS
+                ResizeMode = True
+            End If
+        Else
+            If ResizeMode = True Then
+                MainFrm.MousePointer = vbDefault
+                ResizeMode = False
+                Resizing = False
+            End If
+        End If
+    Else
+        If Y > 16 And Y < MainFrm.ScaleHeight - 48 Then UISplitY = Y
+        UIResize
+    End If
+End Sub
+
+Private Sub Form_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    Resizing = True
 End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
@@ -206,11 +251,19 @@ Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
 End Sub
 
 Private Sub Form_Resize()
-    If (MainFrm.ScaleWidth > 16) And (MainFrm.ScaleHeight > 32) Then
-        Text1.Top = MainFrm.ScaleHeight - Text1.Height - 4
-        Text1.Width = MainFrm.ScaleWidth - 8
-        Picture1.Width = MainFrm.ScaleWidth
-        Picture1.Height = Text1.Top - 4
+    UIResize
+End Sub
+
+Private Sub UIResize()
+    If (MainFrm.ScaleWidth > 256) And (MainFrm.ScaleHeight > 128) Then
+        'If MainFrm.ScaleHeight < UISplitY Then
+        '
+        'end if
+        Vis.Width = MainFrm.ScaleWidth
+        Vis.Height = UISplitY
+        EditBox.Top = UISplitY + 4
+        EditBox.Width = MainFrm.ScaleWidth - 8
+        EditBox.Height = MainFrm.ScaleHeight - UISplitY - 8
         ReSizeGLScene
     End If
 End Sub
@@ -266,17 +319,18 @@ Sub SaveFile(Force As Boolean)
     
     fn = CommonDialog1.FileName
     
-    If FSO.FileExists(fn) = True Then
+    If FSO.FileExists(fn) = True And fn <> LastFn Then
         If MsgBox("Overwrite existing file ?", vbQuestion + vbYesNo) = vbNo Then Exit Sub
     End If
     
-    ln = Text1.Text
+    ln = EditBox.Text
     Open CommonDialog1.FileName For Output As #1
         If Len(ln) >= 2 Then
             If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
         End If
-        Print #1, Text1.Text;
+        Print #1, EditBox.Text;
         SetSaveState True
+        LastFn = fn
     Close #1
     
 Abort:
@@ -290,13 +344,21 @@ Private Sub menu_settings_Click()
     SettingsFrm.Show 1
 End Sub
 
-Private Sub Picture1_DblClick()
+Private Sub EditBox_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    If ResizeMode = True Then
+        MainFrm.MousePointer = vbDefault
+        ResizeMode = False
+        Resizing = False
+    End If
+End Sub
+
+Private Sub vis_DblClick()
     Nav_X = 0
     Nav_Y = 0
     Display
 End Sub
 
-Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub vis_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
     Dim SnapC As Single
     
     If Button = 1 Then
@@ -305,7 +367,7 @@ Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single,
         PrevNav_Y = Nav_Y
         Drag_X = X
         Drag_Y = Y
-        Picture1.MousePointer = vbSizeAll
+        Vis.MousePointer = vbSizeAll
     ElseIf Button = 2 And X > (XMargin * Spacing) Then
         SnapC = Spacing * 15
         Meas_X = (((X - Nav_X - (XMargin * Spacing) + 8) \ SnapC) * SnapC) + (XMargin * Spacing)
@@ -314,12 +376,18 @@ Private Sub Picture1_MouseDown(Button As Integer, Shift As Integer, X As Single,
     End If
 End Sub
 
-Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub vis_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
     Dim SnapC As Single
     Dim c As Integer
     Dim PopupFlag As Boolean
     Dim PLX, PLY As Single
     Dim New_X, New_Y As Integer
+    
+    If ResizeMode = True Then
+        MainFrm.MousePointer = vbDefault
+        ResizeMode = False
+        Resizing = False
+    End If
     
     If Dragging = True Then
         New_X = PrevNav_X - (Drag_X - X)
@@ -369,23 +437,28 @@ Private Sub Picture1_MouseMove(Button As Integer, Shift As Integer, X As Single,
     End If
 End Sub
 
-Private Sub Picture1_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+Private Sub vis_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
     If Button = 1 Then
         Dragging = False
     ElseIf Button = 2 Then
         Measuring = False
     End If
-    Picture1.MousePointer = vbCrosshair
+    Vis.MousePointer = vbCrosshair
     Display
 End Sub
 
-Private Sub Picture1_Paint()
+Private Sub vis_Paint()
     If Loaded = True Then Redraw
 End Sub
 
-Private Sub Text1_Change()
-    If JustLoaded = False Then SetSaveState False
-    JustLoaded = False
+Private Sub EditBox_Change()
+    'If JustLoaded = False Then SetSaveState False
+    'JustLoaded = False
+    
+    If ResizeMode = True Then
+        MainFrm.MousePointer = vbDefault
+        ResizeMode = False
+    End If
 End Sub
 
 Sub SetSaveState(v As Boolean)
@@ -405,7 +478,7 @@ Sub SetFormTitle()
     MainFrm.Caption = title
 End Sub
 
-Private Sub Text1_KeyDown(KeyCode As Integer, Shift As Integer)
+Private Sub EditBox_KeyDown(KeyCode As Integer, Shift As Integer)
     Dim w As Integer
     
     If KeyCode = 116 Then Redraw      ' F5 key
@@ -421,7 +494,7 @@ Private Sub Text1_KeyDown(KeyCode As Integer, Shift As Integer)
     Keys(KeyCode) = True
 End Sub
 
-Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
+Private Sub EditBox_KeyUp(KeyCode As Integer, Shift As Integer)
     Dim w As Integer
     
     Keys(KeyCode) = False
@@ -438,15 +511,15 @@ Private Sub Text1_KeyUp(KeyCode As Integer, Shift As Integer)
 End Sub
 
 Sub ResetRT()
-    RefreshTimer = 4
+    RefreshCountdown = 4
     Timer1.Enabled = True
 End Sub
 
 Private Sub Timer1_Timer()
-    If RefreshTimer = 0 Then
+    If RefreshCountdown = 0 Then
         Timer1.Enabled = False
         Redraw
     Else
-        RefreshTimer = RefreshTimer - 1
+        RefreshCountdown = RefreshCountdown - 1
     End If
 End Sub

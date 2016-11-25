@@ -67,6 +67,8 @@ Public nWaves As Integer
 Public GIdxAdd As Integer
 Public GLevel As Integer
 
+Public AnalogMax As Integer
+Public AnalogScale As Integer
 Public WaveName As String
 
 ' Settings
@@ -80,6 +82,7 @@ Public ColorScheme As Integer
 Public ColorSat As Integer
 Public AntiAliasing As Boolean
 Public LastOpened As String
+Public UISplitY As Integer
 
 Public Color_Background As TGLByteColor
 Public Color_Ticks As TGLByteColor
@@ -197,7 +200,7 @@ Public Sub Display()
         RenderText Ntxt, NtX, NtY, 0.9
     End If
     
-    SwapBuffers MainFrm.Picture1.hDC
+    SwapBuffers MainFrm.Vis.hDC
 End Sub
 
 Public Sub UpdateDisplay()
@@ -315,7 +318,6 @@ End Sub
 
 Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
     Dim XDraw As Integer
-    Dim YDraw As Integer
     Dim c As Integer
     Dim st As Integer
     Dim blk As String * 1
@@ -332,175 +334,223 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
     Dim FieldType As String
     Dim FieldData As String
     Dim Found As Boolean
-    Dim l As Integer
+    Dim L As Integer
+    Dim LastL As Integer
     Dim dti As Integer
     Dim DF() As String
     Dim LastD As Integer
     Dim DAlpha As Integer
     Dim sx, sy, ex, ey As Integer
+    Dim PinParse As Integer
+    Dim AnalogVal As Integer
     
-    Found = False
-    For f = 0 To UBound(Fields)
-        eq = InStr(1, Fields(f), ":")   ' Field has type:data pair ?
-        If eq > 0 Then
-            Fields(f) = Replace(Fields(f), Chr(9), " ")    ' Tab to space
-            FieldType = Trim(LCase(Left(Fields(f), eq - 1)))
-            FieldData = Trim(Right(Fields(f), Len(Fields(f)) - eq))
-        Else
-            ' Line only has field with no data
-            FieldType = Trim(LCase(Fields(f)))
-        End If
-        If FieldType = TypeMatch Then
-            Found = True
-            Exit For
-        End If
-    Next f
-        
-    If Found = False Then Exit Sub
+    PinParse = 0
     
-    If FieldType = "ruler" Then
-        RenderRuler FieldData
-    ElseIf FieldType = "name" Then
-        WaveName = FieldData
-        UsedWave = True
-    ElseIf FieldType = "data" Then
-        RenderData FieldData
-    ElseIf FieldType = "pin" Then
-        RenderPin FieldData, w * 20
-    ElseIf FieldType = "group" Then
-        DF = Split(FieldData, ",")
-        If UBound(DF) >= 1 Then
-            With GroupStack(GIdxAdd)
-                .Level = GLevel
-                .Start = (w * 20) - 3
-                .Txt = DF(0)
-                .Color = Val(DF(1))
-                .Stop = -1
-            End With
-            GIdxAdd = GIdxAdd + 1
-            GLevel = GLevel + 1
-        End If
-    ElseIf FieldType = "groupend" Then
-        ' Go back up the groupstack to see what was the last started group
-        For c = GIdxAdd - 1 To 0 Step -1
-            If GroupStack(c).Stop = -1 Then
-                GroupStack(c).Stop = (w * 20) - 2
-                GLevel = GLevel - 1
+    Do
+        Found = False
+        For f = PinParse To UBound(Fields)
+            eq = InStr(1, Fields(f), ":")   ' Field has type:data pair ?
+            If eq > 0 Then
+                Fields(f) = Replace(Fields(f), Chr(9), " ")    ' Tabs to spaces
+                FieldType = Trim(LCase(Left(Fields(f), eq - 1)))
+                FieldData = Trim(Right(Fields(f), Len(Fields(f)) - eq))
+            Else
+                ' Line only has field with no data
+                FieldType = Trim(LCase(Fields(f)))
+            End If
+            If FieldType = TypeMatch Then
+                Found = True
                 Exit For
             End If
-        Next c
-    ElseIf FieldType = "wave" Then
-        UsedWave = True
-        LastBlk = "z"   ' Default block
-        DataState = -1
-        dti = 0
-
-        glPushMatrix
-        glTranslatef XMargin, 0, 0
+        Next f
+            
+        If Found = False Then Exit Sub
         
-        For c = 0 To Len(FieldData) - 1
-            ' Draw
-            XDraw = XMargin + (c * 15)
+        If FieldType = "ruler" Then
+            RenderRuler FieldData
+        ElseIf FieldType = "name" Then
+            WaveName = FieldData
+            UsedWave = True
+            AnalogMax = 16      ' Default
+            AnalogScale = 16    ' Default
+        ElseIf FieldType = "data" Then
+            RenderData FieldData
+        ElseIf FieldType = "pin" Then
+            PinParse = f + 1
+            RenderPin FieldData, w * 20
+        ElseIf FieldType = "ana" Then
+            DF = Split(FieldData, ",")
+            If UBound(DF) >= 1 Then
+                AnalogMax = Val(DF(0))
+                AnalogScale = Limit(DF(1), 1, 64, 16)
+            End If
+        ElseIf FieldType = "group" Then
+            DF = Split(FieldData, ",")
+            If UBound(DF) >= 1 Then
+                With GroupStack(GIdxAdd)
+                    .Level = GLevel
+                    .Start = (w * 20) - 3
+                    .Txt = DF(0)
+                    .Color = Val(DF(1))
+                    .Stop = -1
+                End With
+                GIdxAdd = GIdxAdd + 1
+                GLevel = GLevel + 1
+            End If
+        ElseIf FieldType = "groupend" Then
+            ' Go back up the groupstack to see what was the last started group
+            For c = GIdxAdd - 1 To 0 Step -1
+                If GroupStack(c).Stop = -1 Then
+                    GroupStack(c).Stop = (w * 20) - 2
+                    GLevel = GLevel - 1
+                    Exit For
+                End If
+            Next c
+        ElseIf FieldType = "wave" Then
+            UsedWave = True
+            LastBlk = "z"   ' Default block
+            DataState = -1
+            dti = 0
+    
+            glPushMatrix
+            glTranslatef XMargin, 0, 0
             
-            PBlk = Mid(FieldData, c + 1, 1)
-            blk = PBlk
-            
-            If PBlk = "." Then
-                If LastBlk = "H" Then
-                    PBlk = "h"          ' Adapt
-                ElseIf LastBlk = "L" Then
-                    PBlk = "l"          ' Adapt
+            For c = 0 To Len(FieldData) - 1
+                ' Draw
+                XDraw = XMargin + (c * 15)
+                
+                PBlk = Mid(FieldData, c + 1, 1)     ' PBlk is character in editbox
+                blk = PBlk                          ' blk is translated character for layout
+                
+                If PBlk = "." Then
+                    If LastBlk = "H" Then
+                        PBlk = "h"          ' Adapt
+                    ElseIf LastBlk = "L" Then
+                        PBlk = "l"          ' Adapt
+                    ElseIf LastBlk = "A" Then
+                        PBlk = "a"          ' Adapt
+                    Else
+                        PBlk = LastBlk      ' Just repeat
+                    End If
+                    blk = PBlk
+                End If
+                
+                AscP = Asc(PBlk)
+                If (AscP >= &H30 And AscP <= &H36) Or PBlk = "=" Then   ' Start data (chars 0~6)
+                    If DataState = -1 Then
+                        If PBlk = "=" Then
+                            DataColor = 0
+                        Else
+                            DataColor = Asc(PBlk) - &H30
+                        End If
+                        If Not NextIsDot(FieldData, c) Then
+                            blk = "u"
+                            DStart = XDraw
+                            DataState = -2
+                        Else
+                            DataState = 0
+                        End If
+                        DAlpha = 31
+                    End If
                 Else
-                    PBlk = LastBlk      ' Repeat
+                    DataColor = -1
+                    DAlpha = 127
                 End If
-                blk = PBlk
-            End If
-            
-            AscP = Asc(PBlk)
-            If (AscP >= &H30 And AscP <= &H36) Or PBlk = "=" Then   ' Start data
-                If DataState = -1 Then
-                    If PBlk = "=" Then
-                        DataColor = 0
-                    Else
-                        DataColor = Asc(PBlk) - &H30
-                    End If
-                    If Not NextIsDot(FieldData, c) Then
-                        blk = "u"
-                        DStart = XDraw
-                        DataState = -2
-                    Else
-                        DataState = 0
-                    End If
-                    DAlpha = 31
+                
+                If DataState = 0 Then
+                    DStart = XDraw
+                    blk = "s"
                 End If
-            Else
-                DataColor = -1
-                DAlpha = 127
-            End If
-            
-            If DataState = 0 Then
-                DStart = XDraw
-                blk = "s"
-            End If
-            If DataState = 1 Then blk = "d"
-            If DataState > -1 And Not NextIsDot(FieldData, c) Then
-                blk = "e"
-                DataState = -2
-            End If
-            
-            ' Look for block def
-            If PBlk <> "." Then
-                d = 0
-                Do While True
-                    ch = DispLists(d).Char
-                    If ch = " " Then
-                        d = 0
-                        Exit Do
+                If DataState = 1 Then blk = "d"
+                If DataState > -1 And Not NextIsDot(FieldData, c) Then
+                    blk = "e"
+                    DataState = -2
+                End If
+                
+                ' Look for block def (only if not analog symbol)
+                If PBlk <> "." And PBlk <> "A" And PBlk <> "a" Then
+                    d = 0
+                    Do While d < 256
+                        ch = DispLists(d).Char
+                        If ch = " " Then
+                            d = 0
+                            Exit Do
+                        End If
+                        If ch = blk Then Exit Do
+                        d = d + 1
+                    Loop
+                End If
+                
+                SetGLColor Color_Waves
+                
+                SetDataColor DataColor, DAlpha
+                
+                ' Symbol
+                If PBlk <> "A" And PBlk <> "a" Then
+                    glCallList DispLists(d).DL
+                Else
+                    ' Analog symbol
+                    If PBlk = "A" Then
+                        If (DataTxt(0) <> "") Then
+                            If dti <= UBound(DataTxt) Then
+                                AnalogVal = Val(DataTxt(dti))
+                                dti = dti + 1
+                            End If
+                        End If
                     End If
-                    If ch = blk Then Exit Do
-                    d = d + 1
-                Loop
-            End If
-            
-            SetGLColor Color_Waves
-            
-            ' Transition
-            If c > 0 Then
-                sx = DispLists(LastD).EP.X - 15
-                sy = DispLists(LastD).EP.Y
-                ex = DispLists(d).SP.X
-                ey = DispLists(d).SP.Y
-                If (sx <> ex) Or (sy <> ey) Then
+                    LastL = L
+                    If AnalogVal > AnalogMax Then AnalogVal = AnalogMax     ' Cap
+                    L = (AnalogMax - AnalogVal) * AnalogScale
                     glBegin bmLines
-                        glVertex2d sx, sy
-                        glVertex2d ex, ey
+                        glVertex2d 0, L
+                        glVertex2d 15, L
                     glEnd
                 End If
-            End If
-            
-            SetDataColor DataColor, DAlpha
-            glCallList DispLists(d).DL
-            
-            If DataState = 0 Then DataState = 1
-            If DataState = -2 Then
-                If (DataTxt(0) <> "") Then
-                    If dti <= UBound(DataTxt) Then
-                        SetDataColor DataColor, 127
-                        RenderText DataTxt(dti), -(((XDraw - DStart) / 2) + (Len(DataTxt(dti)) * 4)) + 7, 0, 1
-                        dti = dti + 1
+                
+                ' Transition
+                If c > 0 Then
+                    If PBlk <> "A" And PBlk <> "a" Then
+                        sx = DispLists(LastD).EP.X - 15     ' Width of one symbol
+                        sy = DispLists(LastD).EP.Y
+                        ex = DispLists(d).SP.X
+                        ey = DispLists(d).SP.Y
+                    Else
+                        ' Analog symbol
+                        sx = 0
+                        sy = LastL
+                        ex = 0
+                        ey = L
+                    End If
+                    If (sx <> ex) Or (sy <> ey) Then
+                        glBegin bmLines
+                            glVertex2d sx, sy
+                            glVertex2d ex, ey
+                        glEnd
                     End If
                 End If
-                DataState = -1
-            End If
+                
+                If DataState = 0 Then DataState = 1
+                If DataState = -2 Then
+                    If (DataTxt(0) <> "") Then
+                        If dti <= UBound(DataTxt) Then
+                            SetDataColor DataColor, 127
+                            RenderText DataTxt(dti), -(((XDraw - DStart) / 2) + (Len(DataTxt(dti)) * 4)) + 7, 0, 1
+                            dti = dti + 1
+                        End If
+                    End If
+                    DataState = -1
+                End If
+                
+                LastBlk = PBlk
+                LastD = d
+                
+                glTranslatef 15, 0, 0   ' Width of one symbol
+            Next c
             
-            LastBlk = PBlk
-            LastD = d
+            If XDraw > MaxWidth Then MaxWidth = XDraw
             
-            glTranslatef 15, 0, 0
-        Next c
-        
-        If XDraw > MaxWidth Then MaxWidth = XDraw
-        
-        glPopMatrix
-    End If
+            glPopMatrix
+        End If
+    
+    Loop Until TypeMatch <> "pin"
 End Sub

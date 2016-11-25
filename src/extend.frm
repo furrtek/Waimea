@@ -155,7 +155,7 @@ Private Sub Command1_Click()
             For c = 0 To UBound(WaveDefsLn) - 1
                 ToAdd = ToAdd & WaveDefsLn(c) & vbCrLf
             Next c
-            MainFrm.Text1.Text = ToAdd & WaveDefsLn(c)
+            MainFrm.EditBox.Text = ToAdd & WaveDefsLn(c)
         End If
     
     End If
@@ -169,6 +169,8 @@ End Sub
 
 Private Sub Form_Activate()
     Dim c, i As Integer
+    
+    List1.Clear
     
     i = 0
     For c = 0 To nWaves - 1

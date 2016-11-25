@@ -21,7 +21,7 @@ Public Sub Render()
     Dim Lines() As String
     Dim Fields() As String
 
-    WaveDef = MainFrm.Text1.Text
+    WaveDef = MainFrm.EditBox.Text
     
     ' For each line...
     Lines = Split(WaveDef, vbCrLf)
@@ -47,6 +47,7 @@ Public Sub Render()
                 ProcessFields Fields, "groupend", nWaves
                 ProcessFields Fields, "name", nWaves
                 ProcessFields Fields, "data", nWaves
+                ProcessFields Fields, "ana", nWaves
                 ProcessFields Fields, "wave", nWaves
                 ProcessFields Fields, "ruler", nWaves
                 ProcessFields Fields, "pin", nWaves
