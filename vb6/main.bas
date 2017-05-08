@@ -101,13 +101,14 @@ Public Nav_X As Integer
 Public Nav_Y As Integer
 
 ' Display Lists
-Public EverythingDL As GLuint
+Public PanDL As GLuint
 Public PinDL As GLuint
 Public TicksDL As GLuint
 Public Waves(256) As TWave    ' Blocks
 Public CharDL(128) As GLuint    ' Characters
 Public DispLists(256) As WDispList  ' For blocks
 Public NamesDL As GLuint
+Public BackDL As GLuint
 
 Public FilePath As String
 
@@ -139,13 +140,18 @@ Public Sub Display()
     glBlendFunc sfSrcAlpha, dfOneMinusSrcAlpha
     
     glMatrixMode mmModelView
+    
+    ' Backmost stuff
     glLoadIdentity
-    glTranslatef Nav_X, Nav_Y, 0#
-    glPushMatrix
+    glTranslatef 0, Nav_Y + YMargin, 0
+    glCallList BackDL
     
-    glCallList EverythingDL
+    ' Draw pannable stuff
+    glLoadIdentity
+    glTranslatef Nav_X + XMargin, Nav_Y, 0
+    glCallList PanDL
     
-    ' Draw names
+    ' Frontmost stuff
     glLoadIdentity
     If Nav_X > 0 Then
         glTranslatef Nav_X, Nav_Y, 0
@@ -154,22 +160,18 @@ Public Sub Display()
     End If
     If ColorScheme = 0 Then
         glBegin bmQuads
-            glColor4b 127, 127, 127, 7
+            glColor4b 127, 127, 127, 95
             glVertex2f 0, 0
-            glColor4b 127, 127, 127, 63
             glVertex2f XMargin, 0
             glVertex2f XMargin, MaxHeight
-            glColor4b 127, 127, 127, 7
             glVertex2f 0, MaxHeight
         glEnd
     Else
         glBegin bmQuads
-            glColor4b 0, 0, 0, 7
+            glColor4b 0, 0, 0, 95
             glVertex2f 0, 0
-            glColor4b 0, 0, 0, 63
             glVertex2f XMargin, 0
             glVertex2f XMargin, MaxHeight
-            glColor4b 0, 0, 0, 7
             glVertex2f 0, MaxHeight
         glEnd
     End If
@@ -203,27 +205,32 @@ Public Sub Display()
     SwapBuffers MainFrm.Vis.hDC
 End Sub
 
+Public Sub MakeNewDL(DL As GLuint)
+    If glIsList(DL) = GL_TRUE Then glDeleteLists DL, 1
+    DL = glGenLists(1)
+End Sub
+
 Public Sub UpdateDisplay()
     Dim w As Integer
     Dim PinTextLen As Integer
     
     If Loaded = False Then Exit Sub
     
-    ' Fill EverythingDL
-    If glIsList(EverythingDL) = GL_TRUE Then glDeleteLists EverythingDL, 1
-    EverythingDL = glGenLists(1)
-    glNewList EverythingDL, lstCompile
+    ' Fill PanDL
+    MakeNewDL PanDL
+    glNewList PanDL, lstCompile
     
-    glScalef Spacing, 1, 1
-    glPushMatrix                            ' Initial matrix (nav, spacing)
+    glPushMatrix
     
     ' Draw ticks
+    glScalef Spacing, 1, 1
     SetGLColor Color_Ticks
     glCallList TicksDL
     
     ' Draw rulers
     glPopMatrix                             ' Restore initial matrix
     glPushMatrix
+    glScalef Spacing, 1, 1
     For w = 0 To nRulers - 1
         SetDataColor Rulers(w).Color, 63
         glBegin bmLines
@@ -235,33 +242,11 @@ Public Sub UpdateDisplay()
     glPopMatrix                             ' Restore initial matrix
     glTranslatef 0, YMargin, 0
     glPushMatrix                            ' Add Y margin, new origin
-    
-    ' Draw groups
-    For w = 0 To GIdxAdd - 1
-        ' Shapes
-        glPopMatrix                         ' Restore
-        glPushMatrix
-        glTranslatef GroupStack(w).Level * 14, 0, 0
-        glPushMatrix                        ' Level offset
-        SetDataColor GroupStack(w).Color, GroupAlpha
-        glBegin bmPolygon
-            glVertex2f 0, GroupStack(w).Start
-            glVertex2f MaxWidth, GroupStack(w).Start
-            glVertex2f MaxWidth, GroupStack(w).Stop
-            glVertex2f 0, GroupStack(w).Stop
-        glEnd
-        
-        ' Text
-        glPopMatrix
-        SetDataColor GroupStack(w).Color, 127
-        glTranslatef 0, ((GroupStack(w).Stop + GroupStack(w).Start) / 2) + ((Len(GroupStack(w).Txt) * 7) / 2), 0
-        glRotatef -90, 0, 0, 1
-        RenderText GroupStack(w).Txt, 2, 0, 0.8
-    Next w
 
     ' Draw waves
     glPopMatrix                             ' Restore
     glPushMatrix
+    glScalef Spacing, 1, 1
     For w = 0 To nWaves - 1
         If Waves(w).Used = True Then glCallList Waves(w).DL
     Next w
@@ -273,6 +258,7 @@ Public Sub UpdateDisplay()
     For w = 0 To nPins - 1
         glPopMatrix                         ' Restore
         glPushMatrix
+        glScalef Spacing, 1, 1
         glTranslatef PinList(w).X - 10, PinList(w).Y, 0
         SetDataColor PinList(w).Color, 127
         glCallList PinDL
@@ -284,14 +270,16 @@ Public Sub UpdateDisplay()
         If PinList(w).Show = True Then
             glPopMatrix                     ' Restore
             glPushMatrix
-            PinTextLen = Len(PinList(w).Txt) * 8 + 16
+            glScalef Spacing, 1, 1
+            PinTextLen = GetTextDisplayWidth(PinList(w).Txt) * 8 + 16
             glTranslatef PinList(w).X + 8, PinList(w).Y + 10, 0
             SetGLColor Color_Background
             glBegin bmPolygon
                 glVertex2f 0, 0
                 glVertex2f 8, -8
                 glVertex2f PinTextLen, -8
-                glVertex2f PinTextLen, 8
+                glVertex2f PinTextLen, 8 + GetTextDisplayHeight(PinList(w).Txt) * 14
+                glVertex2f 8, 8 + GetTextDisplayHeight(PinList(w).Txt) * 14
                 glVertex2f 8, 8
                 glVertex2f 0, 0
             glEnd
@@ -300,7 +288,8 @@ Public Sub UpdateDisplay()
                 glVertex2f 0, 0
                 glVertex2f 8, -8
                 glVertex2f PinTextLen, -8
-                glVertex2f PinTextLen, 8
+                glVertex2f PinTextLen, 8 + GetTextDisplayHeight(PinList(w).Txt) * 14
+                glVertex2f 8, 8 + GetTextDisplayHeight(PinList(w).Txt) * 14
                 glVertex2f 8, 8
                 glVertex2f 0, 0
             glEnd
@@ -408,16 +397,15 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
             Next c
         ElseIf FieldType = "wave" Then
             UsedWave = True
-            LastBlk = "z"   ' Default block
+            LastBlk = "z"       ' Default block
             DataState = -1
             dti = 0
     
             glPushMatrix
-            glTranslatef XMargin, 0, 0
             
             For c = 0 To Len(FieldData) - 1
                 ' Draw
-                XDraw = XMargin + (c * 15)
+                XDraw = (c * 15)
                 
                 PBlk = Mid(FieldData, c + 1, 1)     ' PBlk is character in editbox
                 blk = PBlk                          ' blk is translated character for layout

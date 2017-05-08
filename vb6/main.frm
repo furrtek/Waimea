@@ -44,6 +44,7 @@ Begin VB.Form MainFrm
       BorderStyle     =   0  'None
       Height          =   2880
       Left            =   0
+      MousePointer    =   2  'Cross
       ScaleHeight     =   192
       ScaleMode       =   3  'Pixel
       ScaleWidth      =   880
@@ -51,7 +52,7 @@ Begin VB.Form MainFrm
       TabStop         =   0   'False
       Top             =   0
       Width           =   13200
-      Begin VB.Timer Timer1 
+      Begin VB.Timer RefreshTmr 
          Enabled         =   0   'False
          Interval        =   100
          Left            =   720
@@ -113,9 +114,14 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
-'Dim JustLoaded As Boolean   ' Not used anymore ?
+' Order of stuff, from back to front:
+' Ticks, rulers (panDL)
+' Group horizontal stripes (fixed)
+' Waves, pins, bubbles... (panDL)
+' Names (fixed)
+
 Dim Dragging As Boolean
-Dim LastFn As String       ' Last saved filename
+Dim LastFile As String      ' Last saved filename
 Dim Drag_X As Integer
 Dim Drag_Y As Integer
 Dim PrevNav_X As Integer
@@ -130,6 +136,7 @@ Private Sub Form_Activate()
     
     If Loaded = True Then Exit Sub
     
+    ' Startup initializations
     Set FSO = New FileSystemObject
     
     XMargin = 100
@@ -138,8 +145,12 @@ Private Sub Form_Activate()
     FilePath = ""
     SetSaveState False
     
-    If Not CreateGLWindow(640, 480, 16) Then End
+    If Not CreateGLWindow(640, 480, 16) Then
+        MsgBox "Could not create OpenGL view.", vbCritical
+        End
+    End If
     
+    ' Ask for some displaylists
     TicksDL = glGenLists(1)
     For w = 0 To 255
         Waves(w).DL = glGenLists(1)
@@ -151,6 +162,7 @@ Private Sub Form_Activate()
     LoadFont
     LoadPin
     
+    ' Try opening last opened file if needed
     If OpenLast = True Then
         If LoadWaveDef(LastOpened) = False Then
             LoadWaveDef App.Path & "\demo.txt"
@@ -159,34 +171,35 @@ Private Sub Form_Activate()
         LoadWaveDef App.Path & "\demo.txt"
     End If
     
+    ' Init done
     Loaded = True
     
     Redraw
 End Sub
 
-Function LoadWaveDef(fn As String)
-    Dim ln As String
+Function LoadWaveDef(File As String) As Boolean
+    Dim FileLine As String
     Dim LoadStr As String
 
-    If FSO.FileExists(fn) = False Then
+    If FSO.FileExists(File) = False Then
         LoadWaveDef = False
         Exit Function
     End If
 
-    Open fn For Input As #1
+    Open File For Input As #1
         LoadStr = ""
         While Not EOF(1)
-            Line Input #1, ln
-            LoadStr = LoadStr & ln & vbCrLf
+            Line Input #1, FileLine
+            LoadStr = LoadStr & FileLine & vbCrLf
         Wend
-        'JustLoaded = True       ' Not used anymore ?
         EditBox.Text = LoadStr
         DoEvents
-        FilePath = fn
+        FilePath = File
         SetSaveState True
-        LastFn = fn
+        LastFile = File
     Close #1
     
+    ' Reset pan
     Nav_X = 0
     Nav_Y = 0
     
@@ -197,10 +210,12 @@ Function LoadWaveDef(fn As String)
 End Function
 
 Private Sub Form_Load()
+    ' Init must be done
     Loaded = False
 End Sub
 
 Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    ' Click & drag in the right spot means resizing
     If ResizeMode = True Then Resizing = True
 End Sub
 
@@ -210,6 +225,7 @@ Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y A
     If Resizing = False Then
         VisHeight = Vis.Height
         
+        ' Change cursor to North-South resize arrows when in between views
         If Y > VisHeight And Y < VisHeight + 4 Then
             If ResizeMode = False Then
                 MainFrm.MousePointer = vbSizeNS
@@ -223,13 +239,14 @@ Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y A
             End If
         End If
     Else
+        ' Resize limits
         If Y > 16 And Y < MainFrm.ScaleHeight - 48 Then UISplitY = Y
         UIResize
     End If
 End Sub
 
 Private Sub Form_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
-    Resizing = True
+    Resizing = False
 End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
@@ -255,10 +272,11 @@ Private Sub Form_Resize()
 End Sub
 
 Private Sub UIResize()
+    ' Resize controls with limits
     If (MainFrm.ScaleWidth > 256) And (MainFrm.ScaleHeight > 128) Then
-        'If MainFrm.ScaleHeight < UISplitY Then
-        '
-        'end if
+        If MainFrm.ScaleHeight < UISplitY + 8 Then
+            UISplitY = MainFrm.ScaleHeight - 8
+        End If
         Vis.Width = MainFrm.ScaleWidth
         Vis.Height = UISplitY
         EditBox.Top = UISplitY + 4
@@ -273,7 +291,7 @@ Private Sub Form_Unload(Cancel As Integer)
 End Sub
 
 Private Sub menu_about_Click()
-    MsgBox "Waimea " & App.Major & "." & App.Minor & vbCrLf & "By furrtek - 2016" & vbCrLf & vbCrLf & "https://github.com/furrtek/Waimea", vbInformation
+    MsgBox "Waimea " & App.Major & "." & App.Minor & App.Revision & vbCrLf & "By furrtek - 2017" & vbCrLf & vbCrLf & "https://github.com/furrtek/Waimea", vbInformation
 End Sub
 
 Private Sub menu_export_Click()
@@ -281,22 +299,27 @@ Private Sub menu_export_Click()
 End Sub
 
 Private Sub menu_extend_Click()
-    If nWaves > 0 Then ExtendFrm.Show 1
+    If nWaves > 0 Then
+        ExtendFrm.Show 1
+    Else
+        MsgBox "No waves to extend.", vbExclamation
+    End If
 End Sub
 
 Private Sub menu_open_Click()
-    Dim fn As String
+    Dim File As String
     
-    CommonDialog1.DialogTitle = "Open waveform file"
+    CommonDialog1.DialogTitle = "Open waveform sheet"
     CommonDialog1.ShowOpen
     
+    ' Ask to save current file before opening new one if needed
     If Saved = False Then
         If Confirm = False Then Exit Sub
     End If
     
-    fn = CommonDialog1.FileName
+    File = CommonDialog1.FileName
     
-    If FSO.FileExists(fn) = True Then LoadWaveDef fn
+    LoadWaveDef File
 End Sub
 
 Private Sub menu_save_Click()
@@ -306,31 +329,34 @@ End Sub
 Sub SaveFile(Force As Boolean)
     On Error GoTo Abort
     
-    Dim fn As String
-    Dim ln As String
+    Dim File As String
+    Dim FileLine As String
     
     If FilePath = "" Or Force = True Then
-        CommonDialog1.DialogTitle = "Save waveform file"
+        ' "Save as"
+        CommonDialog1.DialogTitle = "Save waveform sheet"
         CommonDialog1.ShowSave
         FilePath = CommonDialog1.FileName
     Else
+        ' "Save"
         CommonDialog1.FileName = FilePath
     End If
     
-    fn = CommonDialog1.FileName
+    File = CommonDialog1.FileName
     
-    If FSO.FileExists(fn) = True And fn <> LastFn Then
+    If FSO.FileExists(File) = True And File <> LastFile Then
         If MsgBox("Overwrite existing file ?", vbQuestion + vbYesNo) = vbNo Then Exit Sub
     End If
     
-    ln = EditBox.Text
+    FileLine = EditBox.Text
     Open CommonDialog1.FileName For Output As #1
-        If Len(ln) >= 2 Then
-            If Right(ln, 2) = vbCrLf Then ln = Left(ln, Len(ln) - 2)
+        ' Remove trailing CRLF
+        If Len(FileLine) >= 2 Then
+            If Right(FileLine, 2) = vbCrLf Then FileLine = Left(FileLine, Len(FileLine) - 2)
         End If
         Print #1, EditBox.Text;
         SetSaveState True
-        LastFn = fn
+        LastFile = File
     Close #1
     
 Abort:
@@ -352,7 +378,23 @@ Private Sub EditBox_MouseMove(Button As Integer, Shift As Integer, X As Single, 
     End If
 End Sub
 
+Private Sub mwnu_new_Click()
+    Dim File As String
+    
+    ' Ask to save current file before clearing if needed
+    If Saved = False Then
+        If Confirm = False Then Exit Sub
+    End If
+    
+    EditBox.Text = ""
+    FilePath = "new_sheet.txt"
+    Saved = False
+    SetFormTitle
+    Redraw
+End Sub
+
 Private Sub vis_DblClick()
+    ' Reset pan
     Nav_X = 0
     Nav_Y = 0
     Display
@@ -362,6 +404,7 @@ Private Sub vis_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As
     Dim SnapC As Single
     
     If Button = 1 Then
+        ' Left mouse button: drag pan
         Dragging = True
         PrevNav_X = Nav_X
         PrevNav_Y = Nav_Y
@@ -369,6 +412,7 @@ Private Sub vis_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As
         Drag_Y = Y
         Vis.MousePointer = vbSizeAll
     ElseIf Button = 2 And X > (XMargin * Spacing) Then
+        ' Right mouse button: measure time
         SnapC = Spacing * 15
         Meas_X = (((X - Nav_X - (XMargin * Spacing) + 8) \ SnapC) * SnapC) + (XMargin * Spacing)
         Meas_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + (YMargin * Spacing) + 8
@@ -414,12 +458,13 @@ Private Sub vis_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As
             Display
         End If
     ElseIf Keys(18) = False Then
+        ' Pin bubble popup if cursor is hovering over
         PopupFlag = False
         For c = 0 To nPins - 1
             PLX = PinList(c).X * Spacing
-            PLY = PinList(c).Y * Spacing
-            If (X > PLX - 10 + Nav_X) And _
-                (X < PLX + 10 + Nav_X) And _
+            PLY = PinList(c).Y
+            If (X > PLX - 10 + XMargin + Nav_X) And _
+                (X < PLX + 10 + XMargin + Nav_X) And _
                 (Y > PLY + YMargin + Nav_Y) And _
                 (Y < PLY + YMargin + 20 + Nav_Y) Then
                 If PinList(c).Show = False Then
@@ -439,8 +484,10 @@ End Sub
 
 Private Sub vis_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
     If Button = 1 Then
+        ' Left mouse button
         Dragging = False
     ElseIf Button = 2 Then
+        ' Right mouse button
         Measuring = False
     End If
     Vis.MousePointer = vbCrosshair
@@ -452,12 +499,10 @@ Private Sub vis_Paint()
 End Sub
 
 Private Sub EditBox_Change()
-    'If JustLoaded = False Then SetSaveState False
-    'JustLoaded = False
-    
     If ResizeMode = True Then
         MainFrm.MousePointer = vbDefault
         ResizeMode = False
+        Resizing = False
     End If
 End Sub
 
@@ -473,7 +518,7 @@ Sub SetFormTitle()
     
     If Saved = False Then title = title & "*"
     
-    title = title & " - Waimea " & App.Major & "." & App.Minor
+    title = title & " - Waimea " & App.Major & "." & App.Minor & App.Revision
     
     MainFrm.Caption = title
 End Sub
@@ -506,18 +551,19 @@ Private Sub EditBox_KeyUp(KeyCode As Integer, Shift As Integer)
         Next w
         Redraw
     ElseIf KeyCode < 112 Or KeyCode > 123 Then
+        ' Retrig refresh timeout
         If LiveRefresh = True Then ResetRT
     End If
 End Sub
 
 Sub ResetRT()
-    RefreshCountdown = 4
-    Timer1.Enabled = True
+    RefreshCountdown = 4    ' 400ms
+    RefreshTmr.Enabled = True
 End Sub
 
-Private Sub Timer1_Timer()
+Private Sub RefreshTmr_Timer()
     If RefreshCountdown = 0 Then
-        Timer1.Enabled = False
+        RefreshTmr.Enabled = False
         Redraw
     Else
         RefreshCountdown = RefreshCountdown - 1

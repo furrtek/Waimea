@@ -9,7 +9,7 @@ End Function
 
 Sub LoadSettings()
     Dim fn As String
-    Dim ln As String
+    Dim FileLine As String
     Dim Setting() As String
     Dim SettingValue As Integer
     
@@ -30,8 +30,8 @@ Sub LoadSettings()
     If FSO.FileExists(fn) = True Then
         Open fn For Input As #1
             Do
-                Line Input #1, ln
-                Setting = Split(LCase(Trim(ln)), "=")
+                Line Input #1, FileLine
+                Setting = Split(LCase(Trim(FileLine)), "=")
                 Setting(1) = Trim(Setting(1))
                 If UBound(Setting) >= 0 Then
                     SettingValue = Val(Setting(1))
@@ -56,33 +56,33 @@ End Sub
 
 Sub SaveSettings()
     Dim fn As String
-    Dim ln As String
+    Dim FileLine As String
     Dim Setting() As String
     
     fn = App.Path & "\settings.ini"
     
     Open fn For Output As #1
-        ln = "spacing=" & Int(Spacing * 10)
-        Print #1, ln
-        ln = "liverefresh=" & B2S(LiveRefresh)
-        Print #1, ln
-        ln = "altbubbles=" & B2S(AltBubbles)
-        Print #1, ln
-        ln = "openlast=" & B2S(OpenLast)
-        Print #1, ln
-        ln = "lastopened=" & FilePath
-        Print #1, ln
-        ln = "groupalpha=" & GroupAlpha
-        Print #1, ln
-        ln = "ticksalpha=" & TicksAlpha
-        Print #1, ln
-        ln = "colorscheme=" & ColorScheme
-        Print #1, ln
-        ln = "colorsat=" & ColorSat
-        Print #1, ln
-        ln = "antialiasing=" & B2S(AntiAliasing)
-        Print #1, ln
-        ln = "split=" & UISplitY
-        Print #1, ln
+        FileLine = "spacing=" & Int(Spacing * 10)
+        Print #1, FileLine
+        FileLine = "liverefresh=" & B2S(LiveRefresh)
+        Print #1, FileLine
+        FileLine = "altbubbles=" & B2S(AltBubbles)
+        Print #1, FileLine
+        FileLine = "openlast=" & B2S(OpenLast)
+        Print #1, FileLine
+        FileLine = "lastopened=" & FilePath
+        Print #1, FileLine
+        FileLine = "groupalpha=" & GroupAlpha
+        Print #1, FileLine
+        FileLine = "ticksalpha=" & TicksAlpha
+        Print #1, FileLine
+        FileLine = "colorscheme=" & ColorScheme
+        Print #1, FileLine
+        FileLine = "colorsat=" & ColorSat
+        Print #1, FileLine
+        FileLine = "antialiasing=" & B2S(AntiAliasing)
+        Print #1, FileLine
+        FileLine = "split=" & UISplitY
+        Print #1, FileLine
     Close #1
 End Sub

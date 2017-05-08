@@ -114,7 +114,7 @@ Private Sub Command1_Click()
     
     If nFill <> 0 Then
     
-        WaveDefs = MainFrm.Text1.Text
+        WaveDefs = MainFrm.EditBox.Text
         WaveDefsLn = Split(WaveDefs, vbCrLf)
         
         If UBound(WaveDefsLn) >= 0 Then
