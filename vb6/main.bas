@@ -127,6 +127,7 @@ Public Sub Display()
     Dim NtX As Integer
     Dim NtY As Integer
     Dim Ntxt As String
+    Dim Middle_Y As Integer
     
     glClearColor Color_Background.Red / 127, Color_Background.Green / 127, Color_Background.Blue / 127, 1
     glClear clrColorBufferBit Or clrDepthBufferBit
@@ -179,21 +180,23 @@ Public Sub Display()
     
     glPopMatrix
     If Measuring = True Then
+        Middle_Y = (Cur_Y + Meas_Y) / 2
+    
         SetDataColor 2, 127
         glBegin bmLines
             glVertex2f Meas_X, Meas_Y - 8
-            glVertex2f Meas_X, Meas_Y + 8
+            glVertex2f Meas_X, Middle_Y
         glEnd
         glBegin bmLines
-            glVertex2f Meas_X, Meas_Y
-            glVertex2f Cur_X, Cur_Y
+            glVertex2f Meas_X, Middle_Y
+            glVertex2f Cur_X, Middle_Y
         glEnd
         glBegin bmLines
-            glVertex2f Cur_X, Cur_Y - 8
+            glVertex2f Cur_X, Middle_Y
             glVertex2f Cur_X, Cur_Y + 8
         glEnd
         
-        SetDataColor 1, 127
+        SetDataColor 0, 127
         Nt = Int(Abs(Meas_X - Cur_X) \ (Spacing * 15))
         Ntxt = Nt & " ticks (" & Round(Nt / 2, 1) & ")"
         NtX = (Meas_X + Cur_X) / 2

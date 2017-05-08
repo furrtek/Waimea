@@ -402,20 +402,39 @@ End Sub
 
 Private Sub vis_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
     Dim SnapC As Single
+    Dim Str_Start As Integer
+    Dim Line_Count As Integer
     
     If Button = 1 Then
-        ' Left mouse button: drag pan
-        Dragging = True
-        PrevNav_X = Nav_X
-        PrevNav_Y = Nav_Y
-        Drag_X = X
-        Drag_Y = Y
-        Vis.MousePointer = vbSizeAll
+        ' Left mouse button
+        If X > XMargin Then
+            ' Drag-pan
+            Dragging = True
+            PrevNav_X = Nav_X
+            PrevNav_Y = Nav_Y
+            Drag_X = X
+            Drag_Y = Y
+            Vis.MousePointer = vbSizeAll
+        Else
+            ' Select line in editbox
+            ' Find where each line starts
+            Str_Start = 0
+            Line_Count = 0
+            Do
+                If Line_Count = (Y - Nav_Y) \ 20 Then Exit Do
+                Str_Start = InStr(Str_Start + 1, LCase(EditBox.Text), "name:")
+                Line_Count = Line_Count + 1
+            Loop While (Str_Start <> 0)
+            If Str_Start > 1 Then
+                EditBox.SelStart = Str_Start - 1
+                EditBox.SetFocus
+            End If
+        End If
     ElseIf Button = 2 And X > (XMargin * Spacing) Then
         ' Right mouse button: measure time
         SnapC = Spacing * 15
         Meas_X = (((X - Nav_X - (XMargin * Spacing) + 8) \ SnapC) * SnapC) + (XMargin * Spacing)
-        Meas_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + (YMargin * Spacing) + 8
+        Meas_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + 8
         Measuring = True
     End If
 End Sub
@@ -451,34 +470,42 @@ Private Sub vis_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As
     ElseIf Measuring = True Then
         SnapC = Spacing * 15
         New_X = (((X - Nav_X - (XMargin * Spacing) + 8) \ SnapC) * SnapC) + (XMargin * Spacing)
-        New_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + (YMargin * Spacing) + 8
+        New_Y = (((Y - Nav_Y - (YMargin * Spacing) + 2) \ 20) * 20) + 8
         If (New_X <> Cur_X) Or (New_Y <> Cur_Y) Then
             Cur_X = New_X
             Cur_Y = New_Y
             Display
         End If
-    ElseIf Keys(18) = False Then
-        ' Pin bubble popup if cursor is hovering over
-        PopupFlag = False
-        For c = 0 To nPins - 1
-            PLX = PinList(c).X * Spacing
-            PLY = PinList(c).Y
-            If (X > PLX - 10 + XMargin + Nav_X) And _
-                (X < PLX + 10 + XMargin + Nav_X) And _
-                (Y > PLY + YMargin + Nav_Y) And _
-                (Y < PLY + YMargin + 20 + Nav_Y) Then
-                If PinList(c).Show = False Then
-                    PopupFlag = True
-                    PinList(c).Show = True
+    End If
+    
+    If X < XMargin Then
+        Vis.MousePointer = vbArrowQuestion
+    Else
+        Vis.MousePointer = vbDefault
+        
+        If Keys(18) = False Then
+            ' Pin bubble popup if cursor is hovering over
+            PopupFlag = False
+            For c = 0 To nPins - 1
+                PLX = PinList(c).X * Spacing
+                PLY = PinList(c).Y
+                If (X > PLX - 10 + XMargin + Nav_X) And _
+                    (X < PLX + 10 + XMargin + Nav_X) And _
+                    (Y > PLY + YMargin + Nav_Y) And _
+                    (Y < PLY + YMargin + 20 + Nav_Y) Then
+                    If PinList(c).Show = False Then
+                        PopupFlag = True
+                        PinList(c).Show = True
+                    End If
+                Else
+                    If PinList(c).Show = True Then
+                        PopupFlag = True
+                        PinList(c).Show = False
+                    End If
                 End If
-            Else
-                If PinList(c).Show = True Then
-                    PopupFlag = True
-                    PinList(c).Show = False
-                End If
-            End If
-        Next c
-        If PopupFlag = True Then Redraw
+            Next c
+            If PopupFlag = True Then Redraw
+        End If
     End If
 End Sub
 
