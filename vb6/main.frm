@@ -131,6 +131,10 @@ Dim Resizing As Boolean
 
 Dim RefreshCountdown As Integer
 
+Private Sub EditBox_KeyPress(KeyAscii As Integer)
+    SetSaveState False
+End Sub
+
 Private Sub Form_Activate()
     Dim w As Integer
     
@@ -534,7 +538,7 @@ Private Sub EditBox_Change()
 End Sub
 
 Sub SetSaveState(v As Boolean)
-    If Saved <> v Then Saved = v
+    Saved = v
     SetFormTitle
 End Sub
 

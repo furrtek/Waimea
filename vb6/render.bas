@@ -28,8 +28,8 @@ Sub RenderTicks()
             SetDataColor GroupStack(w).Color, GroupAlpha
             glBegin bmPolygon
                 glVertex2f 0, GroupStack(w).Start
-                glVertex2f MaxWidth, GroupStack(w).Start
-                glVertex2f MaxWidth, GroupStack(w).Stop
+                glVertex2f MaxWidth + XMargin, GroupStack(w).Start
+                glVertex2f MaxWidth + XMargin, GroupStack(w).Stop
                 glVertex2f 0, GroupStack(w).Stop
             glEnd
         Next w
@@ -192,7 +192,7 @@ Sub RenderNames()
         
             ' Text
             SetDataColor GroupStack(w).Color, 127
-            glTranslatef 0, ((GroupStack(w).Stop + GroupStack(w).Start) / 2) + ((Len(GroupStack(w).Txt) * 7) / 2), 0
+            glTranslatef 0, ((GroupStack(w).Stop + GroupStack(w).Start) / 2) + ((GetTextDisplayWidth(GroupStack(w).Txt) * 7) / 2), 0
             glRotatef -90, 0, 0, 1
             RenderText GroupStack(w).Txt, 2, 0, 0.8
         Next w

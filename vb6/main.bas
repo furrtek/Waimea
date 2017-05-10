@@ -374,7 +374,7 @@ Sub ProcessFields(Fields() As String, TypeMatch As String, w As Integer)
             DF = Split(FieldData, ",")
             If UBound(DF) >= 1 Then
                 AnalogMax = Val(DF(0))
-                AnalogScale = Limit(DF(1), 1, 64, 16)
+                AnalogScale = Limit(Val(DF(1)), 1, 64, 16)
             End If
         ElseIf FieldType = "group" Then
             DF = Split(FieldData, ",")
